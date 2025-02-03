@@ -1,7 +1,7 @@
 'use client'
 import React, {useState, useEffect } from 'react'
 import { create } from 'zustand'
-import './global.css'
+
 const panelPadding = "10px"
 const worksheetSelectionPanelWidth = "300px"
 
@@ -169,9 +169,7 @@ function ChangePageButton({isLeftOrRight}){
     color: "white",
     border: "none",
     borderRadius: "5px",
-    cursor: "pointer",
-    //background color is defined in global.css due to need for :hover selector
-    //update: not using hover selector due to mobile
+    cursor: "pointer"
   }
   
   if(isLeftOrRight == "left"){
