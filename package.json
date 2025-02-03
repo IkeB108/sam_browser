@@ -1,0 +1,24 @@
+{
+  "name": "sam_browser",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "pnpm next dev",
+    "buildlocal": "cross-env NEXT_PUBLIC_USEBASEPATH=false pnpm next build",
+    "buildwithbasepath": "cross-env NEXT_PUBLIC_USEBASEPATH=true pnpm next build",
+    "servelocal": "serve out"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "cross-env": "^7.0.3"
+  }
+}
