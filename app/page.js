@@ -85,7 +85,8 @@ const useSessionStateStore = create( (set)=> ({
 
 function HomePage() {
   const homePageStyle = {
-    fontFamily: "Arial, sans-serif"
+    fontFamily: "Arial, sans-serif",
+    height: "100%"
   }
   /*
   When HomePage mounts for the first time, initialize allStudentsStore by grabbing
@@ -111,7 +112,7 @@ function HomePage() {
 function WorksheetViewer(){
   const worksheetViewerStyle = {
     width: "100%",
-    height: "100vh",
+    height: "100%",
     backgroundColor: "lightgrey",
     display: "flex",
     flexShrink: 0
