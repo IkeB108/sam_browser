@@ -1,9 +1,7 @@
 'use client'
 import React, {useState, useEffect } from 'react'
 import { create } from 'zustand'
-
-const panelPadding = "10px"
-const worksheetSelectionPanelWidth = "300px"
+import WorksheetViewer from './components/WorksheetViewer.js'
 
 /*
 create() is a method from the zustand module for emulating global variables.
@@ -68,20 +66,58 @@ const useAllStudentsStore = create(createAllStudentsStore) //Returns a store hoo
 //Filler data for debugging
 const fillerStudentData = {
   "1": { //id number for the student (to avoid glitches w same-name students)
-    "name": "John Doe",
+    "name": "Bill",
     "color": "red"
   },
-  "2": { //id number for the student (to avoid glitches w same-name students)
-    "name": "Jane Doe",
+  "2": {
+    "name": "Ted",
     "color": "green"
+  },
+  "3": {
+    "name": "Alice",
+    "color": "blue"
   }
 }
 useAllStudentsStore.getState().setAllStudents(fillerStudentData)
 
 const useSessionStateStore = create( (set)=> ({
-  openStudents: ["1", "2"], //list of ids of open students
-  setOpenStudents: (newValue)=>{ set( ()=>({ openStudents: newValue }) ) }
+  //Rather than an ordered array, we use an object with studentIDNumbers as keys.
+  //Store their position (index) in the worksheetSelectionPanel.
+  openStudents: {
+    "2": {
+      "openWorksheets": [],
+      "positionInWorksheetSelectionPanel": 0
+    },
+    "1": {
+      "openWorksheets": [],
+      "positionInWorksheetSelectionPanel": 1
+    }
+  },
+  highestPositionInWorksheetSelectionPanel: 1,
+  setOpenStudents: (newValue)=>{ set( ()=>({ openStudents: newValue }) ) },
+  deleteOpenStudent: (studentIDNumber)=>{
+    let newOpenStudents = {...useSessionStateStore.getState().openStudents}
+    delete newOpenStudents[studentIDNumber]
+    set( ()=>({ openStudents: newOpenStudents }) )
+  },
+  addOpenStudentToBottom: (studentIDNumber)=>{
+    let newOpenStudents = {...useSessionStateStore.getState().openStudents}
+    let highestPositionInWorksheetSelectionPanel = useSessionStateStore.getState().highestPositionInWorksheetSelectionPanel
+    let newOpenStudent = {
+      "openWorksheets": [],
+      "positionInWorksheetSelectionPanel": highestPositionInWorksheetSelectionPanel + 1
+    }
+    newOpenStudents[studentIDNumber] = newOpenStudent
+    set( ()=>({ openStudents: newOpenStudents }) )
+    set( () => ({ highestPositionInWorksheetSelectionPanel: highestPositionInWorksheetSelectionPanel + 1 }) )
+  }
 }))
+
+function getSortedStudentsInSessionState(openStudents){
+  let sortedStudents = Object.keys(openStudents)
+  sortedStudents.sort( (a, b)=> openStudents[a].positionInWorksheetSelectionPanel - openStudents[b].positionInWorksheetSelectionPanel )
+  return sortedStudents
+}
 
 function HomePage() {
   const homePageStyle = {
@@ -94,7 +130,9 @@ function HomePage() {
   to only run this code the first time HomePage mounts.
   */
   useEffect( ()=>{
+    //useAllStudentsStore.getState().initAllStudents();
     window.useAllStudentsStore = useAllStudentsStore; //call useAllStudentsStore.getState() when accessing in the dev console.
+    window.useSessionStateStore = useSessionStateStore;
   }, [])
   /*
   The dependency array we pass into useEffect tells React which variables to look
@@ -108,135 +146,5 @@ function HomePage() {
   )
 }
 
-
-function WorksheetViewer(){
-  const worksheetViewerStyle = {
-    width: "100%",
-    height: "100%",
-    backgroundColor: "lightgrey",
-    display: "flex",
-    flexShrink: 0
-  }
-  
-  
-  return (
-    <div style={worksheetViewerStyle}>
-      <PagePanel />
-      <WorksheetSelectionPanel />
-    </div>
-  )
-}
-
-function PagePanel(){
-  const pagePanelStyle = {
-    flexGrow: 1,
-    flexBasis: "0%",
-    height: "100%",
-    backgroundColor: "pink",
-    padding: panelPadding,
-    boxSizing: "border-box",
-    display: "flex"
-  }
-  return (
-    <div style={pagePanelStyle}>
-      <PageContainer isLeftOrRight="left" />
-      <PageContainer isLeftOrRight="right" />
-    </div>
-  )
-}
-
-function PageContainer( {isLeftOrRight} ){
-  const pageContainerStyle = {
-    width: "50%",
-    height: "100%",
-    backgroundColor: "lightgreen",
-    position: "relative"
-  }
-  return (
-    <div style={pageContainerStyle}>
-      
-      <PageImage imageSrc="placeholderWorksheetPage.webp" />
-      <ChangePageButton isLeftOrRight={isLeftOrRight} />
-    </div>
-  )
-}
-
-function ChangePageButton({isLeftOrRight}){
-  
-  let changePageButtonStyle = {
-    position: "absolute",
-    bottom: "0px",
-    padding: "20px",
-    color: "white",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer"
-  }
-  
-  if(isLeftOrRight == "left"){
-    changePageButtonStyle.left = "0px"
-  } else {
-    changePageButtonStyle.right = "0px"
-  }
-  let buttonText = isLeftOrRight == "left" ? "🡠" : "🡢"
-  return (
-    <button style={changePageButtonStyle} className="turn-page-button">{buttonText}</button>
-  )
-}
-
-function PageImage({ imageSrc }){
-  const pageImageStyle = {
-    width: "100%",
-    height: "100%",
-    objectFit: "contain"
-  }
-  return (
-    <img src={imageSrc} style={pageImageStyle} />
-  )
-}
-
-function WorksheetSelectionPanel(){
-  const worksheetSelectionPanelStyle = {
-    width: worksheetSelectionPanelWidth,
-    height: "100%",
-    backgroundColor: "lightblue",
-    padding: panelPadding,
-    boxSizing: "border-box"
-  }
-  
-  const openStudents = useSessionStateStore().openStudents;
-  return (
-    <div style={worksheetSelectionPanelStyle}>
-      {
-        openStudents.map(
-          studentIDNumber => (
-            <StudentPanel key={studentIDNumber} studentIDNumber={studentIDNumber} />
-          )
-        )
-      }
-    </div>
-  )
-  
-}
-
-function StudentPanel({studentIDNumber}){
-  const { allStudents } = useAllStudentsStore.getState();
-  console.log(allStudents)
-  let student = allStudents[studentIDNumber]
-  const studentPanelStyle = {
-    width: "100%",
-    backgroundColor: "lightyellow",
-    padding: panelPadding,
-    boxSizing: "border-box",
-    marginBottom: panelPadding
-  }
-  // const student = allStudents[studentIDNumber]
-  return (
-    <div style={studentPanelStyle}>
-      <p style={{margin: "0"}}>{student.name}</p>
-      <p style={{margin: "0"}}>{student.color}</p>
-    </div>
-  )
-}
-
+export { useAllStudentsStore, useSessionStateStore, getSortedStudentsInSessionState }
 export default HomePage
