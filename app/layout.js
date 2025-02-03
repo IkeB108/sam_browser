@@ -20,8 +20,7 @@ export default function RootLayout({ children }) {
         {
           // A JSX element doesn't need to be wrapped in parenthesis when it's only one element with no nested elements
           // You can use "null" in place of JSX when you don't want an element to be added
-          // process.env.NODE_ENV === "development" ? <Script crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" strategy="lazyOnload" /> : null
-          <Script crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" strategy="lazyOnload" />
+          process.env.NODE_ENV === "development" ? <Script crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" strategy="lazyOnload" /> : null
         }
         <link rel="stylesheet" href={cssFilePath} />
       </head>

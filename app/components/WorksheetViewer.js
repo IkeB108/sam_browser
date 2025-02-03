@@ -149,7 +149,8 @@ function StudentSessionCardHeader({studentName, studentPos, studentIDNumber}){
     background: "none",
     border: "none",
     cursor: "pointer",
-    fontSize: "large"
+    fontSize: "large",
+    color: "black"
   }
   
   const onCloseClick = () => {
