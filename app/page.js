@@ -2,6 +2,13 @@
 import React, {useState, useEffect } from 'react'
 import { create } from 'zustand'
 import WorksheetViewer from './components/WorksheetViewer.js'
+import SettingsPage from './components/SettingsPage.js'
+
+//Keys in allPages use PascalCasing to match the react component names
+const allPages = {
+  "WorksheetViewer": <WorksheetViewer />,
+  "SettingsPage": <SettingsPage />
+}
 
 /*
 create() is a method from the zustand module for emulating global variables.
@@ -81,49 +88,60 @@ const fillerStudentData = {
 useAllStudentsStore.getState().setAllStudents(fillerStudentData)
 
 const useSessionStateStore = create( (set)=> ({
-  //Rather than an ordered array, we use an object with studentIDNumbers as keys.
-  //Store their position (index) in the worksheetSelectionPanel.
-  openStudents: {
-    "2": {
-      "openWorksheets": [],
-      "positionInWorksheetSelectionPanel": 0
-    },
-    "1": {
-      "openWorksheets": [],
-      "positionInWorksheetSelectionPanel": 1
-    }
-  },
-  highestPositionInWorksheetSelectionPanel: 1,
+  // openStudents: {
+  //   "2": {
+  //     "openWorksheets": [],
+  //     "positionInWorksheetSelectionPanel": 0
+  //   },
+  //   "1": {
+  //     "openWorksheets": [],
+  //     "positionInWorksheetSelectionPanel": 1
+  //   }
+  // },
+  // highestPositionInWorksheetSelectionPanel: 1,
+  // deleteOpenStudent: (studentIDNumber)=>{
+  //   let newOpenStudents = {...useSessionStateStore.getState().openStudents}
+  //   delete newOpenStudents[studentIDNumber]
+  //   set( ()=>({ openStudents: newOpenStudents }) )
+  // },
+  // addOpenStudentToBottom: (studentIDNumber)=>{
+  //   let newOpenStudents = {...useSessionStateStore.getState().openStudents}
+  //   let highestPositionInWorksheetSelectionPanel = useSessionStateStore.getState().highestPositionInWorksheetSelectionPanel
+  //   let newOpenStudent = {
+  //     "openWorksheets": [],
+  //     "positionInWorksheetSelectionPanel": highestPositionInWorksheetSelectionPanel + 1
+  //   }
+  //   newOpenStudents[studentIDNumber] = newOpenStudent
+  //   set( ()=>({ openStudents: newOpenStudents }) )
+  //   set( () => ({ highestPositionInWorksheetSelectionPanel: highestPositionInWorksheetSelectionPanel + 1 }) )
+  // }
+  openStudents: [
+    {"openWorksheets": [], "studentIDNumber": "1"},
+    {"openWorksheets": [], "studentIDNumber": "2"}
+  ],
   setOpenStudents: (newValue)=>{ set( ()=>({ openStudents: newValue }) ) },
   deleteOpenStudent: (studentIDNumber)=>{
-    let newOpenStudents = {...useSessionStateStore.getState().openStudents}
-    delete newOpenStudents[studentIDNumber]
+    let newOpenStudents = useSessionStateStore.getState().openStudents.filter( (student)=> student.studentIDNumber !== studentIDNumber )
     set( ()=>({ openStudents: newOpenStudents }) )
   },
   addOpenStudentToBottom: (studentIDNumber)=>{
-    let newOpenStudents = {...useSessionStateStore.getState().openStudents}
-    let highestPositionInWorksheetSelectionPanel = useSessionStateStore.getState().highestPositionInWorksheetSelectionPanel
-    let newOpenStudent = {
-      "openWorksheets": [],
-      "positionInWorksheetSelectionPanel": highestPositionInWorksheetSelectionPanel + 1
-    }
-    newOpenStudents[studentIDNumber] = newOpenStudent
+    let newOpenStudents = useSessionStateStore.getState().openStudents.concat({"openWorksheets": [], "studentIDNumber": studentIDNumber})
     set( ()=>({ openStudents: newOpenStudents }) )
-    set( () => ({ highestPositionInWorksheetSelectionPanel: highestPositionInWorksheetSelectionPanel + 1 }) )
-  }
+  },
+  
+  currentPage: "WorksheetViewer",
+  setCurrentPage: (newValue)=>{ set( ()=>({ currentPage: newValue }) ) }
 }))
-
-function getSortedStudentsInSessionState(openStudents){
-  let sortedStudents = Object.keys(openStudents)
-  sortedStudents.sort( (a, b)=> openStudents[a].positionInWorksheetSelectionPanel - openStudents[b].positionInWorksheetSelectionPanel )
-  return sortedStudents
-}
 
 function HomePage() {
   const homePageStyle = {
     fontFamily: "Arial, sans-serif",
-    height: "100%"
+    height: "100%",
+    width: "100%"
   }
+  
+  const sessionStateStore = useSessionStateStore()
+  const currentPage = sessionStateStore.currentPage
   /*
   When HomePage mounts for the first time, initialize allStudentsStore by grabbing
   allStudents from localStorage. Pass an empty dependency array [] into useEffect to tell React
@@ -141,10 +159,10 @@ function HomePage() {
   */
   return (
     <div style={homePageStyle}>
-      <WorksheetViewer />
+      {allPages[currentPage]}
     </div>
   )
 }
 
-export { useAllStudentsStore, useSessionStateStore, getSortedStudentsInSessionState }
+export { useAllStudentsStore, useSessionStateStore }
 export default HomePage

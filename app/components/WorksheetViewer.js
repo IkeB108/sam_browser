@@ -1,5 +1,6 @@
-import { colorMap, panelPadding, worksheetSelectionPanelWidth } from "../constants.js"
-import { useAllStudentsStore, useSessionStateStore, getSortedStudentsInSessionState } from "../page.js"
+// import { colorMap, panelPadding, worksheetSelectionPanelWidth, getGenericButtonStyle } from "../constants.js"
+import constants from "../constants.js"
+import { useAllStudentsStore, useSessionStateStore } from "../page.js"
 
 function WorksheetViewer(){
   const worksheetViewerStyle = {
@@ -25,14 +26,38 @@ function PagePanel(){
     flexBasis: "0%",
     height: "100%",
     backgroundColor: "lightgrey",
-    padding: panelPadding,
+    padding: constants.panelPadding,
     boxSizing: "border-box",
-    display: "flex"
+    display: "flex",
+    flexDirection: "column"
   }
   return (
     <div style={pagePanelStyle}>
-      <PageContainer isLeftOrRight="left" />
-      <PageContainer isLeftOrRight="right" />
+      <div style={{display:"flex", height:"0%", flexGrow: 1, backgroundColor:"lightblue"}}>
+        <PageContainer isLeftOrRight="left" />
+        <PageContainer isLeftOrRight="right" />
+      </div>
+      {/* <div style={{display:"flex", flexGrow: 1, flexDirection: "column", height:"100%"}}>
+      </div> */}
+      <PagePanelFooter />
+    </div>
+  )
+}
+
+function PagePanelFooter(){
+  const pagePanelFooterStyle = {  padding: constants.panelPadding }
+  const settingsButtonStyle = {
+    padding: "5px",
+    borderRadius: "50%",
+    backgroundColor: "transparent",
+    border: "none",
+    cursor: "pointer",
+    fontSize: "20px"
+  }
+  const settingsButton = <button onClick={ ()=>{ useSessionStateStore.getState().setCurrentPage("SettingsPage") } } style={settingsButtonStyle}>⚙️</button>
+  return (
+    <div style={pagePanelFooterStyle}>
+      { settingsButton }
     </div>
   )
 }
@@ -45,7 +70,7 @@ function PageContainer( {isLeftOrRight} ){
     position: "relative"
   }
   if(isLeftOrRight == 'left'){
-    pageContainerStyle.marginRight = panelPadding;
+    pageContainerStyle.marginRight = constants.panelPadding;
   }
   return (
     <div style={pageContainerStyle}>
@@ -92,21 +117,20 @@ function PageImage({ imageSrc }){
 
 function WorksheetSelectionPanel(){
   const worksheetSelectionPanelStyle = {
-    width: worksheetSelectionPanelWidth,
+    width: constants.worksheetSelectionPanelWidth,
     height: "100%",
     // backgroundColor: "lightblue",
-    padding: panelPadding,
+    padding: constants.panelPadding,
     boxSizing: "border-box"
   }
   
   const openStudents = useSessionStateStore().openStudents;
-  const sortedStudents = getSortedStudentsInSessionState(openStudents)
   return (
     <div style={worksheetSelectionPanelStyle}>
       {
-        sortedStudents.map( (studentIDNumber)=>{
-          return <StudentSessionCard key={studentIDNumber} studentIDNumber={studentIDNumber} />
-        })
+        openStudents.map( (studentData, index) => {
+          return <StudentSessionCard key={studentData.studentIDNumber} studentIDNumber={studentData.studentIDNumber} />
+        } )
       }
     </div>
   )
@@ -118,19 +142,19 @@ function StudentSessionCard({studentIDNumber}){
   let student = allStudents[studentIDNumber]
   const studentSessionCardStyle = {
     width: "100%",
-    backgroundColor: colorMap[student.color].light,
-    padding: panelPadding,
+    backgroundColor: constants.colorMap[student.color].light,
+    padding: constants.panelPadding,
     boxSizing: "border-box",
-    marginBottom: panelPadding
+    marginBottom: constants.panelPadding
   }
   return (
     <div style={studentSessionCardStyle}>
-      <StudentSessionCardHeader studentName={student.name} studentPos={openStudents[studentIDNumber].positionInWorksheetSelectionPanel} studentIDNumber={studentIDNumber} />
+      <StudentSessionCardHeader studentName={student.name} studentIDNumber={studentIDNumber} />
     </div>
   )
 }
 
-function StudentSessionCardHeader({studentName, studentPos, studentIDNumber}){
+function StudentSessionCardHeader({studentName, studentIDNumber}){
   const headerStyle = {
     display: "flex",
     justifyContent: "space-between",
@@ -160,7 +184,7 @@ function StudentSessionCardHeader({studentName, studentPos, studentIDNumber}){
 
   return (
     <div style={headerStyle}>
-      <h1 style={nameStyle}>{studentName} Pos{studentPos} ID{studentIDNumber}</h1>
+      <h1 style={nameStyle}>{studentName} ID{studentIDNumber}</h1>
       <button style={buttonStyle} onClick={onCloseClick}>&times;</button>
     </div>
   )

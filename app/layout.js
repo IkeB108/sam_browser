@@ -12,10 +12,10 @@ export default function RootLayout({ children }) {
   const bodyStyle = {
     margin: "0 auto",
     maxWidth: "1400px",
-    height: "100%"
+    height: "100%",
   }
   return (
-    <html lang="en" style={{"height": "100%"}}>
+    <html lang="en" style={{height: "100%"}}>
       <head>
         {
           // A JSX element doesn't need to be wrapped in parenthesis when it's only one element with no nested elements

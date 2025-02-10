@@ -1,5 +1,3 @@
-const panelPadding = "6px"
-const worksheetSelectionPanelWidth = "300px"
 const colorMap = {
   "red": "#B90000",
   "orange": "#E15E00",
@@ -17,4 +15,66 @@ for(let i in colorMap){
   }
 }
 
-export { colorMap, panelPadding, worksheetSelectionPanelWidth }
+function getGenericButtonStyle( primarySecondaryOrTertiary ){
+  const genericButtonStyle = {
+    padding: "10px",
+    borderRadius: "8px",
+    cursor: "pointer",
+    borderColor: "black",
+    borderStyle: "solid",
+  }
+  
+  const primaryStyle = {
+    backgroundColor: "black",
+    color: "white",
+    border: "none"
+  }
+  const secondaryStyle = {
+    backgroundColor: "white",
+    color: "black",
+  }
+  const tertiaryStyle = {
+    backgroundColor: "transparent",
+    color: "black",
+    border: "none"
+  }
+  
+  const allStyles = {
+    "primary": primaryStyle,
+    "secondary": secondaryStyle,
+    "tertiary": tertiaryStyle
+  }
+  
+  return {...genericButtonStyle, ...allStyles[primarySecondaryOrTertiary]}
+  
+}
+
+function CloseButton(padding, onClickFunction){
+  const closeButtonStyle = {
+    position: "absolute",
+    top: padding,
+    right: padding,
+    backgroundColor: "transparent",
+    border: "none",
+    cursor: "pointer",
+    width: "40px",
+    height: "40px",
+    // borderRadius: "50%",
+    fontSize: "30px",
+  }
+  return (
+    <button style={closeButtonStyle} onClick={onClickFunction}>×</button>
+  )
+}
+
+const constants = {
+  panelPadding: "6px",
+  pagePadding: "18px",
+  worksheetSelectionPanelWidth: "300px",
+  colorMap,
+  getGenericButtonStyle,
+  CloseButton
+}
+
+export default constants
+// export { colorMap, panelPadding, worksheetSelectionPanelWidth, getGenericButtonStyle }
