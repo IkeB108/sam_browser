@@ -1,5 +1,5 @@
 'use client'
-import React, {useState, useEffect } from 'react'
+import React, { useEffect } from 'react'
 import { create } from 'zustand'
 import WorksheetViewer from './components/WorksheetViewer.js'
 import SettingsPage from './components/SettingsPage.js'
@@ -133,6 +133,16 @@ const useSessionStateStore = create( (set)=> ({
   setCurrentPage: (newValue)=>{ set( ()=>({ currentPage: newValue }) ) }
 }))
 
+const useUserSettingsAndWorksheetImagesStore = create( (set)=> ({
+  userSettings: {},
+  worksheets: {},
+  worksheetImages: {}
+}))
+
+const worksheetImagesLoadedFromFileInput = {}
+const worksheetImages = {}
+const worksheets = {}
+
 function HomePage() {
   const homePageStyle = {
     fontFamily: "Arial, sans-serif",
@@ -164,5 +174,5 @@ function HomePage() {
   )
 }
 
-export { useAllStudentsStore, useSessionStateStore }
+export { useAllStudentsStore, useSessionStateStore, useUserSettingsAndWorksheetImagesStore, worksheets, worksheetImages, worksheetImagesLoadedFromFileInput }
 export default HomePage

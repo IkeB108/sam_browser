@@ -49,6 +49,8 @@ function getGenericButtonStyle( primarySecondaryOrTertiary ){
   
 }
 
+
+
 function CloseButton(padding, onClickFunction){
   const closeButtonStyle = {
     position: "absolute",
@@ -61,11 +63,14 @@ function CloseButton(padding, onClickFunction){
     height: "40px",
     // borderRadius: "50%",
     fontSize: "30px",
+    color: "black"
   }
   return (
     <button style={closeButtonStyle} onClick={onClickFunction}>×</button>
   )
 }
+const useBasePath = process.env.NEXT_PUBLIC_USEBASEPATH === "true" //grab the NEXT_PUBLIC_USEBASEPATH variable that was declared when “pnpm next build” was called
+const basePathToUse = "/sam_browser/out" //No trailing slash. Change to Github repo name if using Github pages.
 
 const constants = {
   panelPadding: "6px",
@@ -73,7 +78,10 @@ const constants = {
   worksheetSelectionPanelWidth: "300px",
   colorMap,
   getGenericButtonStyle,
-  CloseButton
+  CloseButton,
+  useBasePath,
+  basePathToUse,
+  webWorkersFolderPath: (useBasePath ? basePathToUse : "") + "/web_workers_for_ws_images"
 }
 
 export default constants
