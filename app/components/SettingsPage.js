@@ -1,22 +1,12 @@
 import constants from '../constants'
 import React, { useRef, useState, useEffect } from "react"
 import { create } from 'zustand'
-import { useUserSettingsStore, worksheets, worksheetImages } from '../page.js'
+import { useUserSettingsStore, worksheets } from '../page.js'
+import { useStatusMessageStore, useAWorksheetProcessIsBusyStore } from "../stores.js"
 let lastUploadedWorksheetTarFile = null
 let allUntarredFiles = {}
-let useUserIsUploadingWorksheetImagesStore = create( (set) => ({
-  userIsUploadingWorksheetImages: false,
-  updateValue: (newValue) => { 
-    set( ()=>{ console.log("uploading value set to " + newValue); return { userIsUploadingWorksheetImages: newValue } } )
-  }
-}))
 
-const useStatusMessageStore = create( (set)=> ({
-  statusMessage: "Waiting for file input.",
-  setStatusMessage: (newValue)=>{ set( ()=>({ statusMessage: newValue }) ) }
-}))
-
-function setStatusMessage(newValue){
+export function setStatusMessageOfWorksheetProcess(newValue){
   useStatusMessageStore.getState().setStatusMessage(newValue)
 }
 
@@ -25,20 +15,19 @@ function SettingsPage(){
     width: "100%",
     height: "100%",
     boxSizing: "border-box",
-    padding: constants.pagePadding
+    padding: "18px"
   }
   
   return (
     <div style={settingsPageStyle}>
       <h1>Settings</h1>
-      { constants.CloseButton(constants.pagePadding, ()=>{ useSessionStateStore.getState().setCurrentPage("WorksheetViewer") }) }
+      { constants.CloseButton("18px", ()=>{ useSessionStateStore.getState().setCurrentPage("WorksheetViewer") }) }
       <UploadWorksheetImageDataButton />
       <br />
       <RetrieveWorksheetImageDataButton />
       <br /><br />
       <ClearWorksheetImageDataButton />
       <br /><br />
-      <button onClick={()=>{ statusMessageStore.setStatusMessage(typeof untar) }}>Test Untar</button>
       <StatusParagraph />
       
     </div>
@@ -48,8 +37,9 @@ function SettingsPage(){
 function UploadWorksheetImageDataButton(){
   const UploadWorksheetImageDataButtonStyle = constants.getGenericButtonStyle("primary")
   const fileInputRef = React.useRef(null)
+  const aWorksheetProcessIsBusy = useAWorksheetProcessIsBusyStore().aWorksheetProcessIsBusy
   const WorksheetImageDataButtonOnClick = () => {
-    fileInputRef.current.click()
+    if(!aWorksheetProcessIsBusy)fileInputRef.current.click()
   }
   const onFileInputChange = async function(e){
     if(e.target.files.length === 0){
@@ -64,14 +54,19 @@ function UploadWorksheetImageDataButton(){
   
   return (
     <div>
-      <button style={UploadWorksheetImageDataButtonStyle} onClick={WorksheetImageDataButtonOnClick}>Upload Worksheet Image Data</button>
+      <button
+        style={UploadWorksheetImageDataButtonStyle}
+        onClick={WorksheetImageDataButtonOnClick}
+        disabled={aWorksheetProcessIsBusy}
+        className={"button-with-disabled-variant"}
+      >Upload Worksheet Image Data</button>
       <input type="file" style={{display: "none"}} ref={fileInputRef} accept=".tar" onChange={onFileInputChange}/>
     </div>
   )
 }
 
 async function getUntarredFiles(tarFile){
-  setStatusMessage("Extracting images from tar file...")
+  setStatusMessageOfWorksheetProcess("Extracting images from tar file...")
   
   const reader = new FileReader()
   let allExtractedFiles = {}
@@ -98,7 +93,7 @@ async function getUntarredFiles(tarFile){
               console.log("File not a webp image: " + fileName)
             }
           }
-          setStatusMessage(extractedFilesCount + " images extracted.")
+          setStatusMessageOfWorksheetProcess(extractedFilesCount + " images extracted. Storing worksheets on your device...")
           resolve(allExtractedFiles)
         }
       ).catch(reject);
@@ -164,28 +159,28 @@ function storeWorksheetsInIndexedDB(){
   workerForStoreWorksheetsInIDB.postMessage(dataToSend)
   workerForStoreWorksheetsInIDB.onmessage = function(event){
     if(event.data.type == "status_update_from_web_worker"){
-      setStatusMessage(event.data.content)
+      setStatusMessageOfWorksheetProcess(event.data.content)
     }
     if(event.data.type == "confirm_transaction_complete"){
-      useUserIsUploadingWorksheetImagesStore.getState().updateValue(false)
+      useAWorksheetProcessIsBusyStore.getState().updateValue(false)
     }
   }
-  useUserIsUploadingWorksheetImagesStore.getState().updateValue(true)
+  useAWorksheetProcessIsBusyStore.getState().updateValue(true)
 }
 
 function RetrieveWorksheetImageDataButton(){
   const RetrieveWorksheetImageDataButtonStyle = constants.getGenericButtonStyle("primary")
-  const userIsUploadingWorksheetImages = useUserIsUploadingWorksheetImagesStore().userIsUploadingWorksheetImages
+  const aWorksheetProcessIsBusy = useAWorksheetProcessIsBusyStore().aWorksheetProcessIsBusy
   const onClick = function(){
-    if(!userIsUploadingWorksheetImages){
-      retrieveWorksheetsFromIndexedDB()
+    if(!aWorksheetProcessIsBusy){
+      retrieveWorksheetsFromIndexedDB( true )
     }
   }
   return (
     <button 
       style={RetrieveWorksheetImageDataButtonStyle} 
       onClick={onClick} 
-      disabled={userIsUploadingWorksheetImages}
+      disabled={aWorksheetProcessIsBusy}
       className={"button-with-disabled-variant"}
     >
       Retrieve Worksheet Image Data
@@ -193,7 +188,8 @@ function RetrieveWorksheetImageDataButton(){
   )
 }
 
-function retrieveWorksheetsFromIndexedDB(){
+function retrieveWorksheetsFromIndexedDB( isCalledFromSettingsPage ){
+  useAWorksheetProcessIsBusyStore.getState().updateValue(true)
   const workerForRetrieveWorksheetsInIDB = new Worker(constants.webWorkersFolderPath + "/worker_for_retrieve_files_from_idb.js")
   // const workerForRetrieveWorksheetsInIDB = new Worker(constants.webWorkersFolderPath + "/lskdjflskdjf.js")
   const dataToSend = {
@@ -202,7 +198,7 @@ function retrieveWorksheetsFromIndexedDB(){
   workerForRetrieveWorksheetsInIDB.postMessage(dataToSend)
   workerForRetrieveWorksheetsInIDB.onmessage = function(event){
     if(event.data.type == "status_update_from_web_worker"){
-      setStatusMessage(event.data.content)
+      setStatusMessageOfWorksheetProcess(event.data.content)
     }
     if(event.data.type == "worksheets_from_idb"){
       //our worksheets object needs to have all and only the properties
@@ -217,23 +213,27 @@ function retrieveWorksheetsFromIndexedDB(){
       }
       Object.assign(worksheets, event.data.content)
       window.worksheets = worksheets
+      useAWorksheetProcessIsBusyStore.getState().updateValue(false)
     }
   }
 }
 
+export { retrieveWorksheetsFromIndexedDB }
+
 function ClearWorksheetImageDataButton(){
   const ClearWorksheetImageDataButtonStyle = constants.getGenericButtonStyle("primary")
-  const userIsUploadingWorksheetImages = useUserIsUploadingWorksheetImagesStore().userIsUploadingWorksheetImages
+  const aWorksheetProcessIsBusy = useAWorksheetProcessIsBusyStore().aWorksheetProcessIsBusy
   const onClick = function(){
-    if(!userIsUploadingWorksheetImages){
-      clearWorksheetsInIndexedDB()
+    if(!aWorksheetProcessIsBusy){
+      clearWorksheetsInIndexedDB();
+      setStatusMessageOfWorksheetProcess("Worksheet image data cleared.")
     }
   }
   return (
     <button 
       style={ClearWorksheetImageDataButtonStyle} 
       onClick={onClick} 
-      disabled={userIsUploadingWorksheetImages}
+      disabled={aWorksheetProcessIsBusy}
       className={"button-with-disabled-variant"}
     >
       Clear Worksheet Image Data

@@ -4,7 +4,7 @@ import React, { useEffect } from 'react'
 import { create } from 'zustand'
 import WorksheetViewer from './components/WorksheetViewer.js'
 import SettingsPage from './components/SettingsPage.js'
-
+import { retrieveWorksheetsFromIndexedDB, setStatusMessageOfWorksheetProcess } from "./components/SettingsPage.js"
 //Keys in allPages use PascalCasing to match the react component names
 const allPages = {
   "WorksheetViewer": <WorksheetViewer />,
@@ -117,7 +117,7 @@ const useSessionStateStore = create( (set)=> ({
   //   set( () => ({ highestPositionInWorksheetSelectionPanel: highestPositionInWorksheetSelectionPanel + 1 }) )
   // }
   openStudents: [
-    {"openWorksheets": [], "studentIDNumber": "1"},
+    {"openWorksheets": [ "(OLD) 03.01-05 HF (USA) 1-1 WS", "(OLD) 3.02 C10000 (USA) 1-1 WS" ], "studentIDNumber": "1"},
     {"openWorksheets": [], "studentIDNumber": "2"}
   ],
   setOpenStudents: (newValue)=>{ set( ()=>({ openStudents: newValue }) ) },
@@ -138,12 +138,13 @@ const useUserSettingsStore = create( (set)=> ({
   //settings go here
 }))
 
-const worksheetImages = {}
 const worksheets = {}
 
 function HomePage() {
   const homePageStyle = {
-    fontFamily: "Arial, sans-serif",
+    fontFamily: "Roboto, sans-serif",
+    fontWeight: "normal",
+    fontSize: "18px",
     height: "100%",
     width: "100%"
   }
@@ -159,6 +160,9 @@ function HomePage() {
     //useAllStudentsStore.getState().initAllStudents();
     window.useAllStudentsStore = useAllStudentsStore; //call useAllStudentsStore.getState() when accessing in the dev console.
     window.useSessionStateStore = useSessionStateStore;
+    
+    //On page load, retrieve worksheets from IndexedDB if any. This function is imported from SettingsPage.js
+    retrieveWorksheetsFromIndexedDB()
   }, [])
   /*
   The dependency array we pass into useEffect tells React which variables to look
@@ -172,5 +176,5 @@ function HomePage() {
   )
 }
 
-export { useAllStudentsStore, useSessionStateStore, useUserSettingsStore, worksheets, worksheetImages }
+export { useAllStudentsStore, useSessionStateStore, useUserSettingsStore, worksheets }
 export default HomePage

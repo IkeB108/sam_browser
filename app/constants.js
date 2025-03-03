@@ -1,18 +1,12 @@
 const colorMap = {
-  "red": "#B90000",
-  "orange": "#E15E00",
-  "yellow": "#D4D300",
-  "green": "#2D8B1E",
-  "cyan": "#0DB6B3",
-  "blue": "#0d22b6",
-  "purple": "#7e069d",
-  "pink": "#da2bb9"
-}
-for(let i in colorMap){
-  colorMap[i] = {
-    "standard": colorMap[i],
-    "light": colorMap[i] + "55"
-  }
+  "red": "#BD1452",
+  "orange": "#FE9350",
+  "yellow": "#FFFB79",
+  "green": "#53C162",
+  "cyan": "#70D9FF",
+  "blue": "#2D4CA8",
+  "purple": "#8B2F99",
+  "pink": "#FF9FDC"
 }
 
 function getGenericButtonStyle( primarySecondaryOrTertiary ){
@@ -73,8 +67,10 @@ const useBasePath = process.env.NEXT_PUBLIC_USEBASEPATH === "true" //grab the NE
 const basePathToUse = "/sam_browser/out" //No trailing slash. Change to Github repo name if using Github pages.
 
 const constants = {
-  panelPadding: "6px",
-  pagePadding: "18px",
+  softBorderColor: "#A9A09E",
+  hardBorderColor: "#000000",
+  redColor: "#C56D61",
+  purpleColor: "#55587B",
   worksheetSelectionPanelWidth: "300px",
   colorMap,
   getGenericButtonStyle,
