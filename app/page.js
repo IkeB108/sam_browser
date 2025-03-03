@@ -1,4 +1,5 @@
 'use client'
+//     ikeb108.github.io/sam_browser/out
 import React, { useEffect } from 'react'
 import { create } from 'zustand'
 import WorksheetViewer from './components/WorksheetViewer.js'
@@ -133,13 +134,10 @@ const useSessionStateStore = create( (set)=> ({
   setCurrentPage: (newValue)=>{ set( ()=>({ currentPage: newValue }) ) }
 }))
 
-const useUserSettingsAndWorksheetImagesStore = create( (set)=> ({
-  userSettings: {},
-  worksheets: {},
-  worksheetImages: {}
+const useUserSettingsStore = create( (set)=> ({
+  //settings go here
 }))
 
-const worksheetImagesLoadedFromFileInput = {}
 const worksheetImages = {}
 const worksheets = {}
 
@@ -174,5 +172,5 @@ function HomePage() {
   )
 }
 
-export { useAllStudentsStore, useSessionStateStore, useUserSettingsAndWorksheetImagesStore, worksheets, worksheetImages, worksheetImagesLoadedFromFileInput }
+export { useAllStudentsStore, useSessionStateStore, useUserSettingsStore, worksheets, worksheetImages }
 export default HomePage

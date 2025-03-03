@@ -81,7 +81,8 @@ const constants = {
   CloseButton,
   useBasePath,
   basePathToUse,
-  webWorkersFolderPath: (useBasePath ? basePathToUse : "") + "/web_workers_for_ws_images"
+  webWorkersFolderPath: (useBasePath ? basePathToUse : "") + "/web_workers_for_ws_images",
+  idbDatabaseVersion: 1, //This is not the version number for the latest iteration of worksheets downloaded. Instead, this is a version number for the format/structure of the IDB database.
 }
 
 export default constants
