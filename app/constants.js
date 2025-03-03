@@ -78,6 +78,7 @@ const constants = {
   useBasePath,
   basePathToUse,
   webWorkersFolderPath: (useBasePath ? basePathToUse : "") + "/web_workers_for_ws_images",
+  iconsFolderPath: (useBasePath ? basePathToUse : "") + "/icons",
   idbDatabaseVersion: 1, //This is not the version number for the latest iteration of worksheets downloaded. Instead, this is a version number for the format/structure of the IDB database.
 }
 

@@ -262,7 +262,7 @@ function StudentSessionCardFooter({ studentIDNumber }){
 function TimerStartButton({ studentIDNumber, styleObject }){
   return (
     <button style={styleObject}>
-      <img src="/icons/timer.svg" alt="Start timer" style={{ width: "23px", height: "23px" }} />
+      <img src={constants.iconsFolderPath + "/timer.svg"} alt="Start timer" style={{ width: "23px", height: "23px" }} />
     </button>
   )
 }
@@ -270,7 +270,7 @@ function TimerStartButton({ studentIDNumber, styleObject }){
 function AddWorksheetButton({ studentIDNumber, styleObject }){
   return (
     <button style={styleObject}>
-      <img src="/icons/add.svg" alt="Add worksheet" style={{ width: "16px", height: "16px" }} />
+      <img src={constants.iconsFolderPath + "/add.svg"} alt="Add worksheet" style={{ width: "16px", height: "16px" }} />
     </button>
   )
 }
@@ -337,7 +337,7 @@ function StudentSessionCardHeader({studentName, studentIDNumber}){
         <h1 style={nameStyle}>{studentName} ID{studentIDNumber}</h1>
       </div>
       <button style={buttonStyle} onClick={onCloseClick}>
-        <img src="/icons/close.svg" alt="Close" style={{ width: "14px", height: "14px" }} />
+        <img src={constants.iconsFolderPath + "/close.svg"} alt="Close" style={{ width: "14px", height: "14px" }} />
       </button>
     </div>
   )
