@@ -179,6 +179,7 @@ function HomePage() {
     document.addEventListener("touchend", onDocumentTouchEndOrMouseUp)
     document.addEventListener("mouseup", onDocumentTouchEndOrMouseUp)
     updateUserHasPinchZoomedOnResize()
+    console.log("triggered")
     return ()=> {
       window.visualViewport.removeEventListener("resize", updateUserHasPinchZoomedOnResize)
       document.removeEventListener("touchend", onDocumentTouchEndOrMouseUp)
@@ -232,6 +233,11 @@ function HomePage() {
 }
 
 const onDocumentTouchEndOrMouseUp = function(){
+  //Pass in "true" for callAgainBoolean to trigger the function a second time after 200ms.
+  updateUserHasPinchZoomedIfChanged(true)
+}
+
+function updateUserHasPinchZoomedIfChanged( callAgainBoolean ){
   //Update userhaspinchzoomed store, but only if the value has changed.
   //(to prevent unnecessary rerenders)
   const newUserHasPinchZoomed = calcUserHasPinchZoomed()
@@ -239,6 +245,7 @@ const onDocumentTouchEndOrMouseUp = function(){
   if(oldUserHasPinchZoomed !== newUserHasPinchZoomed){
     useUserHasPinchZoomedStore.getState().setUserHasPinchZoomed(newUserHasPinchZoomed)
   }
+  if(callAgainBoolean) setTimeout( updateUserHasPinchZoomedIfChanged(false), 1000 )
 }
 
 export { useAllStudentsStore, useSessionStateStore, useUserSettingsStore, worksheets }

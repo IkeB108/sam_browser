@@ -20,7 +20,7 @@ export default function RootLayout({ children }) {
           // You can use "null" in place of JSX when you don't want an element to be added
           // process.env.NODE_ENV === "development" ? <Script crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" strategy="lazyOnload" /> : null
         }
-        <script crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" />
+        {/* <script crossOrigin="anonymous" src="//unpkg.com/react-scan/dist/auto.global.js" /> */}
         <link rel="stylesheet" href={cssFilePath} />
         <script src={constants.webWorkersFolderPath + "/untar.js"} />
       </head>
