@@ -1,5 +1,5 @@
-// import { colorMap, panelPadding, worksheetSelectionPanelWidth, getGenericButtonStyle } from "../constants.js"
 import constants from "../constants.js"
+import { CloseButton } from "../constants.js"
 import { useAllStudentsStore, useSessionStateStore } from "../page.js"
 import { useStatusMessageStore, useAWorksheetProcessIsBusyStore } from "../stores.js"
 import { setStatusMessageOfWorksheetProcess } from "./SettingsPage.js"
@@ -169,8 +169,10 @@ function StudentSessionCard({studentIDNumber}){
     boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.45)",
     boxSizing: "border-box",
     marginBottom: "24px",
-    overflow: "hidden"
+    overflow: "hidden",
+    position: "relative"
   }
+  
   return (
     <div style={studentSessionCardStyle}>
       <StudentSessionCardHeader studentName={student.name} studentIDNumber={studentIDNumber} />
@@ -182,12 +184,14 @@ function StudentSessionCard({studentIDNumber}){
 
 function getStudentFromOpenStudents(studentIDNumber){
   const openStudents = useSessionStateStore.getState().openStudents;
-  return openStudents.filter( (student)=> student.studentIDNumber == studentIDNumber )[0]
+  const thisStudent = openStudents.filter( (student)=> student.studentIDNumber == studentIDNumber )[0]
+  const thisStudentIndex = openStudents.findIndex( (student)=> student.studentIDNumber == studentIDNumber )
+  return { thisStudent, thisStudentIndex }
 }
 
 function StudentSessionCardWorksheetList({ studentIDNumber }){
-  const allStudents = useAllStudentsStore.getState().allStudents;
-  const openStudents = useSessionStateStore().openStudents;
+  const {allStudents} = useAllStudentsStore.getState()
+  const {openStudents, currentWorksheet} = useSessionStateStore()
   
   const worksheetListStyle = {
     display: "flex",
@@ -197,19 +201,30 @@ function StudentSessionCardWorksheetList({ studentIDNumber }){
     height: "100%"
   }
   
-  const thisStudent = getStudentFromOpenStudents(studentIDNumber)
+  const {thisStudent, thisStudentIndex} = getStudentFromOpenStudents(studentIDNumber)
+  
+  const worksheetList = []
+  
+  for(let i = 0; i < thisStudent.openWorksheets.length; i++){
+    const worksheetID = thisStudent.openWorksheets[i]
+    const isCurrentWorksheet = currentWorksheet.openStudentIndex == thisStudentIndex && currentWorksheet.worksheetIndex == i
+    
+    const onClick = function(){
+      useSessionStateStore.getState().setCurrentWorksheet(thisStudentIndex, i)
+      useSessionStateStore.getState().setUserIsMovingCurrentWorksheet(false)
+    }
+    
+    worksheetList.push(<WorksheetListItem key={worksheetID} worksheetID={worksheetID} isCurrentWorksheet={isCurrentWorksheet} onClick={onClick} />)
+  }
+  
   return (
     <div style={worksheetListStyle}>
-      {
-        thisStudent.openWorksheets.map( (worksheetID) => {
-          return <WorksheetListItem key={worksheetID} worksheetID={worksheetID}/>
-        } )
-      }
+      { worksheetList }
     </div>
   )
 }
 
-function WorksheetListItem({ worksheetID }){
+function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
   const worksheetListItemStyle = {
     fontFamily: "Roboto, sans-serif",
     fontWeight: "normal",
@@ -217,22 +232,92 @@ function WorksheetListItem({ worksheetID }){
     border: "none",
     backgroundColor: "white",
     padding: "10px",
-    cursor: "pointer",
+    cursor: isCurrentWorksheet ? "arrow" : "pointer",
     textAlign: "left", // Align text to the left
     width: "100%", // Ensure the button takes full width
     borderRadius: "500px", // Make the button pill-shaped
+    color: "black",
+    boxSizing: "border-box",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+  }
+  const worksheetNameParagraphStyle = {
+    margin: 0,
+    whiteSpace: isCurrentWorksheet ? "normal" : "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    flexShrink: 1
+  }
+  if(isCurrentWorksheet){
+    worksheetListItemStyle.backgroundColor = "#55587B26"
+    
+    const onCloseClick = function(){
+      const currentWorksheet = useSessionStateStore.getState().currentWorksheet
+      //Remove the worksheet from this student's openWorksheets array
+      const thisStudent = useSessionStateStore.getState().openStudents[currentWorksheet.openStudentIndex]
+      thisStudent.openWorksheets.splice(currentWorksheet.worksheetIndex, 1)
+      //Set the currently open worksheet to null
+      useSessionStateStore.getState().setCurrentWorksheet(null, null)
+      useSessionStateStore.getState().setUserIsMovingCurrentWorksheet(false)
+    }
+    
+    return (
+      <div style={worksheetListItemStyle}>
+        <p style={worksheetNameParagraphStyle}>{ worksheetID }</p>
+        <div style={{display: "flex"}}>
+          <MoveWorksheetButton />
+            <CloseButton buttonWidthString="24px" iconWidthString="14px" color="black" onClickFunction={onCloseClick} additionalStyleObject={{flexShrink: 0}} />
+        </div>
+      </div>
+    )
   }
   return (
-    <button style={worksheetListItemStyle}>
+    <button style={worksheetListItemStyle} onClick={onClick}>
       { worksheetID }
     </button>
   )
+}
+
+
+function MoveWorksheetButton(){
+  const moveWorksheetButtonStyle = {
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    width: "24px",
+    height: "24px",
+    padding: "0px",
+    verticalAlign: "middle",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    margin: "0px 16px",
+    boxSizing: "border-box",
+    flexShrink: 0
+  }
+  const onClickFunction = () => {
+    //Toggle whether user is moving a worksheet
+    const { userIsMovingCurrentWorksheet, setUserIsMovingCurrentWorksheet, setUserCanClickAnywhereToDisableMovingCurrentWorksheet } = useSessionStateStore.getState()
+    if(!userIsMovingCurrentWorksheet){
+      console.log("user is now moving a worksheet")
+      setUserCanClickAnywhereToDisableMovingCurrentWorksheet(true)
+    }
+    setUserIsMovingCurrentWorksheet( !userIsMovingCurrentWorksheet )
+  }
+  return (
+    <button style={moveWorksheetButtonStyle} onClick={ onClickFunction }>
+      <img src={`${constants.iconsFolderPath}/move.svg`} alt="Move Worksheet" style={{ width: "20px", height: "16px" }} />
+    </button>
+  )
+  
 }
 
 function StudentSessionCardFooter({ studentIDNumber }){
   const footerStyle = {
     backgroundColor: "none",
     padding: "14px 14px",
+    paddingTop: "0px",
     justifyContent: "space-between",
     alignItems: "center",
     display: "flex"
@@ -277,13 +362,16 @@ function AddWorksheetButton({ studentIDNumber, styleObject }){
 
 function StudentSessionCardHeader({studentName, studentIDNumber}){
   const { allStudents } = useAllStudentsStore.getState();
+  const { userIsMovingCurrentWorksheet, openStudents, currentWorksheet } = useSessionStateStore.getState()
   let student = allStudents[studentIDNumber]
   const headerStyle = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: constants.redColor,
-    padding: "14px 14px"
+    padding: "14px 14px",
+    "--original-bg-color": constants.redColor,
+    cursor: userIsMovingCurrentWorksheet ? "pointer" : "default"
   }
 
   const nameStyle = {
@@ -308,37 +396,37 @@ function StudentSessionCardHeader({studentName, studentIDNumber}){
     display: "flex",
     alignItems: "center"
   }
-
-  const buttonStyle = {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    fontSize: "large",
-    color: "white",
-    width: "24px",
-    height: "24px",
-    padding: "0px",
-    verticalAlign: "middle",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  }
-  
   
   const onCloseClick = () => {
     const { deleteOpenStudent } = useSessionStateStore.getState()
     deleteOpenStudent(studentIDNumber)
   }
   
+  const moveWorksheetToThisStudent = function(){
+    console.log(openStudents)
+    const { thisStudentIndex } = getStudentFromOpenStudents(studentIDNumber)
+    const { setOpenStudents, setCurrentWorksheet } = useSessionStateStore.getState()
+    if(thisStudentIndex !== currentWorksheet.openStudentIndex){
+      let newOpenStudents = [...openStudents]
+      newOpenStudents[thisStudentIndex].openWorksheets.push( openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex] )
+      openStudents[currentWorksheet.openStudentIndex].openWorksheets.splice(currentWorksheet.worksheetIndex, 1)
+      setOpenStudents(newOpenStudents)
+      setCurrentWorksheet(thisStudentIndex, newOpenStudents[thisStudentIndex].openWorksheets.length - 1)
+    }
+  }
+  
   return (
-    <div style={headerStyle}>
+    <div style={headerStyle}
+    className={  userIsMovingCurrentWorksheet ? "pulsatingHeader" : null  }
+    onClick = { userIsMovingCurrentWorksheet ? moveWorksheetToThisStudent : null }
+    >
       <div style={leftAlignedContainerStyle}>
         <div style={studentColorIndicatorCircleStyle}></div>
         <h1 style={nameStyle}>{studentName} ID{studentIDNumber}</h1>
       </div>
-      <button style={buttonStyle} onClick={onCloseClick}>
-        <img src={constants.iconsFolderPath + "/close.svg"} alt="Close" style={{ width: "14px", height: "14px" }} />
-      </button>
+      {
+        userIsMovingCurrentWorksheet ? null : <CloseButton buttonWidthString="24px" iconWidthString="14px" color="white" onClickFunction={onCloseClick} />
+      }
     </div>
   )
 }

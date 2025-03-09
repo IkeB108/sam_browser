@@ -6,3 +6,24 @@
   background-color: gray !important;
   cursor: not-allowed !important;
 }
+
+.pulsatingHeader {
+  animation: pulsateHeader 1s infinite;
+  -webkit-animation:pulsateHeader 1s infinite;
+  background-color: var(--original-bg-color)
+}
+
+@keyframes pulsateHeader {
+  0% {
+    /* border-color: #611c1300; */
+    background-color: var(--original-bg-color)
+  }
+  50% {
+    /* border-color: #611c13ff; */
+    background-color: #eb9286;
+  }
+  100% {
+    /* border-color: #611c1300; */
+    background-color: var(--original-bg-color)
+  }
+}

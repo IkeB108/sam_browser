@@ -131,7 +131,13 @@ const useSessionStateStore = create( (set)=> ({
   },
   
   currentPage: "WorksheetViewer",
-  setCurrentPage: (newValue)=>{ set( ()=>({ currentPage: newValue }) ) }
+  setCurrentPage: (newValue)=>{ set( ()=>({ currentPage: newValue }) ) },
+  currentWorksheet: { openStudentIndex: null, worksheetIndex: null },
+  setCurrentWorksheet: (openStudentIndex, worksheetIndex)=>{ set( ()=>({ currentWorksheet: { openStudentIndex: openStudentIndex, worksheetIndex: worksheetIndex } }) ) },
+  userIsMovingCurrentWorksheet: false,
+  setUserIsMovingCurrentWorksheet: (newValue)=>{ set( ()=>({ userIsMovingCurrentWorksheet: newValue }) ) },
+  userCanClickAnywhereToDisableMovingCurrentWorksheet: false,
+  setUserCanClickAnywhereToDisableMovingCurrentWorksheet: (newValue)=>{ set( ()=>({ userCanClickAnywhereToDisableMovingCurrentWorksheet: newValue }) ) }
 }))
 
 const useUserSettingsStore = create( (set)=> ({
@@ -169,8 +175,16 @@ function HomePage() {
   for changes in. When any of these variables change, the function in useEffect() is
   triggered. Empty = run only once (on component mount).
   */
+  const onClick = function(){
+    if(currentPage == "WorksheetViewer"){
+      if(sessionStateStore.userCanClickAnywhereToDisableMovingCurrentWorksheet){
+        sessionStateStore.setUserIsMovingCurrentWorksheet(false)
+        sessionStateStore.setUserCanClickAnywhereToDisableMovingCurrentWorksheet(false)
+      }
+    }
+  }
   return (
-    <div style={homePageStyle}>
+    <div style={homePageStyle} onClick={onClick}>
       {allPages[currentPage]}
     </div>
   )

@@ -1,4 +1,5 @@
-import constants from '../constants'
+import constants from '../constants.js'
+import { CloseButton } from "../constants.js"
 import React, { useRef, useState, useEffect } from "react"
 import { create } from 'zustand'
 import { useUserSettingsStore, worksheets } from '../page.js'
@@ -18,10 +19,18 @@ function SettingsPage(){
     padding: "18px"
   }
   
+  const closeButtonAdditionalStyle = {
+    position: "absolute",
+    top: "18px",
+    right: "18px",
+  }
+  const closeButton = <CloseButton buttonWidthString="24px" iconWidthString="14px" color="black" onClickFunction={()=>{ useSessionStateStore.getState().setCurrentPage("WorksheetViewer") }} additionalStyleObject={closeButtonAdditionalStyle} />
+  
   return (
     <div style={settingsPageStyle}>
       <h1>Settings</h1>
-      { constants.CloseButton("18px", ()=>{ useSessionStateStore.getState().setCurrentPage("WorksheetViewer") }) }
+      { closeButton }
+      {/* { constants.CloseButton("18px", "9px", ()=>{ useSessionStateStore.getState().setCurrentPage("WorksheetViewer") }) } */}
       <UploadWorksheetImageDataButton />
       <br />
       <RetrieveWorksheetImageDataButton />
