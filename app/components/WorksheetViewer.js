@@ -1,14 +1,15 @@
 import constants from "../constants.js"
 import { CloseButton } from "../constants.js"
 import { useAllStudentsStore, useSessionStateStore } from "../page.js"
-import { useStatusMessageStore, useAWorksheetProcessIsBusyStore } from "../stores.js"
-import { setStatusMessageOfWorksheetProcess } from "./SettingsPage.js"
+import { useStatusMessageStore, useAWorksheetProcessIsBusyStore, useUserHasPinchZoomedStore } from "../stores.js"
+
 import { useEffect } from "react"
 function WorksheetViewer(){
+  const { userHasPinchZoomed } = useUserHasPinchZoomedStore()
   const worksheetViewerStyle = {
     width: "100%",
     height: "100%",
-    // backgroundColor: "lightgrey",
+    backgroundColor: userHasPinchZoomed ? "green": "red",
     display: "flex",
     flexShrink: 0
   }
@@ -139,7 +140,8 @@ function WorksheetSelectionPanel(){
     // backgroundColor: "lightblue",
     padding: "18px",
     paddingLeft: "0px",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
+    overflowY: "scroll"
   }
   
   const openStudents = useSessionStateStore().openStudents;

@@ -12,4 +12,11 @@ const useStatusMessageStore = create( (set)=> ({
   setStatusMessage: (newValue)=>{ set( ()=>({ statusMessage: newValue }) ) }
 }))
 
-export { useStatusMessageStore, useAWorksheetProcessIsBusyStore }
+const useUserHasPinchZoomedStore = create( (set) => {
+  return {
+    userHasPinchZoomed: false,
+    setUserHasPinchZoomed: (newValue) => { set( ()=>({ userHasPinchZoomed: newValue}) ) }
+  }
+})
+
+export { useStatusMessageStore, useAWorksheetProcessIsBusyStore, useUserHasPinchZoomedStore }

@@ -5,6 +5,8 @@ import { create } from 'zustand'
 import WorksheetViewer from './components/WorksheetViewer.js'
 import SettingsPage from './components/SettingsPage.js'
 import { retrieveWorksheetsFromIndexedDB, setStatusMessageOfWorksheetProcess } from "./components/SettingsPage.js"
+import { useUserHasPinchZoomedStore } from "./stores.js"
+
 //Keys in allPages use PascalCasing to match the react component names
 const allPages = {
   "WorksheetViewer": <WorksheetViewer />,
@@ -144,15 +146,53 @@ const useUserSettingsStore = create( (set)=> ({
   //settings go here
 }))
 
+export function calcUserHasPinchZoomed(){
+  //calculates whether the user has pinch zoomed on the page
+  return window.visualViewport.scale !== 1
+}
+
+function updateUserHasPinchZoomedOnResize(){
+  //If the user has pinch zoomed, set the store to true,
+  //but only if it's not already set to true. Otherwise, setting it to true
+  //would cause unnecessary rerenders of the entire HomePage during every frame of pinch zoom gesture.
+  if( calcUserHasPinchZoomed() ){
+    if(!useUserHasPinchZoomedStore.getState().userHasPinchZoomed){
+      useUserHasPinchZoomedStore.getState().setUserHasPinchZoomed(true)
+    }
+  }
+  //If the user has not pinch zoomed, the userHasPinchZoomed state shouldn't be set to false until touchend.
+  //Otherwise, the user could trigger drag events while pinch zooming if it's zoomed all the way out.
+}
+
 const worksheets = {}
 
 function HomePage() {
+  const { userHasPinchZoomed } = useUserHasPinchZoomedStore()
+  //The function in this useEffect will run every time HomePage is rerendered,
+  //which will happen every time userHasPinchZoomed changes, which should be
+  //at the start and end of pinch zoom gestures, but not in between.
+  useEffect( ()=>{
+    //These event listeners get added every time the component is rerendered.
+    //To prevent event listeners from accumulating, they get removed when the component unmounts
+    //via the cleanup function that is returned below.
+    window.visualViewport.addEventListener("resize", updateUserHasPinchZoomedOnResize)
+    document.addEventListener("touchend", onDocumentTouchEndOrMouseUp)
+    document.addEventListener("mouseup", onDocumentTouchEndOrMouseUp)
+    updateUserHasPinchZoomedOnResize()
+    return ()=> {
+      window.visualViewport.removeEventListener("resize", updateUserHasPinchZoomedOnResize)
+      document.removeEventListener("touchend", onDocumentTouchEndOrMouseUp)
+      document.removeEventListener("mouseup", onDocumentTouchEndOrMouseUp)
+    }
+  }, [])
+  
   const homePageStyle = {
     fontFamily: "Roboto, sans-serif",
     fontWeight: "normal",
     fontSize: "18px",
     height: "100%",
-    width: "100%"
+    width: "100%",
+    touchAction: userHasPinchZoomed ? "auto" : "pinch-zoom" //If the user has pinch zoomed, allow panning. If not, disable panning
   }
   
   const sessionStateStore = useSessionStateStore()
@@ -177,7 +217,8 @@ function HomePage() {
   */
   const onClick = function(){
     if(currentPage == "WorksheetViewer"){
-      if(sessionStateStore.userCanClickAnywhereToDisableMovingCurrentWorksheet){
+      if(sessionStateStore.userIsMovingCurrentWorksheet && sessionStateStore.userCanClickAnywhereToDisableMovingCurrentWorksheet){
+        console.log("is called")
         sessionStateStore.setUserIsMovingCurrentWorksheet(false)
         sessionStateStore.setUserCanClickAnywhereToDisableMovingCurrentWorksheet(false)
       }
@@ -188,6 +229,16 @@ function HomePage() {
       {allPages[currentPage]}
     </div>
   )
+}
+
+const onDocumentTouchEndOrMouseUp = function(){
+  //Update userhaspinchzoomed store, but only if the value has changed.
+  //(to prevent unnecessary rerenders)
+  const newUserHasPinchZoomed = calcUserHasPinchZoomed()
+  const oldUserHasPinchZoomed = useUserHasPinchZoomedStore.getState().userHasPinchZoomed
+  if(oldUserHasPinchZoomed !== newUserHasPinchZoomed){
+    useUserHasPinchZoomedStore.getState().setUserHasPinchZoomed(newUserHasPinchZoomed)
+  }
 }
 
 export { useAllStudentsStore, useSessionStateStore, useUserSettingsStore, worksheets }
