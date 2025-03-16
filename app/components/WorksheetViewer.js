@@ -210,7 +210,13 @@ function PagePanelFooter(){
   <GenericPillButton
     isFilled={true}
     isShort={true}
-    additionalStyleObject={{paddingLeft: "min(1.5vw, 24px)", paddingRight: "min(1.5vw, 24px)"}}
+    additionalStyleObject={
+      {
+        paddingLeft: "min(1.5vw, 24px)", 
+        paddingRight: "min(1.5vw, 24px)",
+        zIndex: "2"
+      }
+    }
     onClickFunction={ ()=>{console.log("log worksheet button clicked")} }>
       <p style={{margin: "0", padding: "0", marginRight: "14px", fontSize: "min(1.6vw, 16px)", textWrap: "nowrap"}}>Log worksheet</p>
       <img src={constants.iconsFolderPath + "/arrow_up.svg"} alt="Expand" style={{ width: "14px", height: "7px" }}/>
@@ -257,7 +263,13 @@ function PagePanelFooter(){
   <GenericPillButton
     isFilled={false}
     isShort={true}
-    additionalStyleObject={{paddingLeft: "min(2vw, 30px)", paddingRight: "min(2vw, 30px)"}}
+    additionalStyleObject={
+      {
+        paddingLeft: "min(2vw, 30px)",
+        paddingRight: "min(2vw, 30px)",
+        zIndex: "2"
+      }
+    }
     onClickFunction={  ()=>{ changePage("prev") } }>
       <img src={constants.iconsFolderPath + "/arrow_left.svg"} alt="Previous Page" style={{width: "15px", height: "20px"}} />
   </GenericPillButton>
@@ -266,7 +278,13 @@ function PagePanelFooter(){
   <GenericPillButton
     isFilled={false}
     isShort={true}
-    additionalStyleObject={{paddingLeft: "min(2vw, 30px)", paddingRight: "min(2vw, 30px)"}}
+    additionalStyleObject={
+      {
+        paddingLeft: "min(2vw, 30px)",
+        paddingRight: "min(2vw, 30px)",
+        zIndex: "2"
+      }   
+    }
     onClickFunction={  ()=>{ changePage("next") } }>
       <img src={constants.iconsFolderPath + "/arrow_right.svg"} alt="Next Page" style={{width: "15px", height: "20px"}} />
   </GenericPillButton>
