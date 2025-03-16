@@ -471,7 +471,7 @@ function StudentSessionCard({studentIDNumber}){
     // border: `1px solid ${constants.softBorderColor}`,
     boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.45)",
     boxSizing: "border-box",
-    marginBottom: "24px",
+    marginBottom: "12px",
     overflow: "hidden",
     position: "relative",
   }
@@ -499,7 +499,7 @@ function StudentSessionCardWorksheetList({ studentIDNumber }){
   const worksheetListStyle = {
     display: "flex",
     flexDirection: "column",
-    padding: "14px 14px",
+    padding: "10px 4px",
     overflowY: "auto",
     height: "100%"
   }
@@ -542,14 +542,14 @@ function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
   const worksheetListItemStyle = {
     fontFamily: "Roboto, sans-serif",
     fontWeight: "normal",
-    fontSize: "14px",
+    fontSize: "12px",
     border: "none",
     backgroundColor: "white",
-    padding: "10px",
+    padding: "6px",
     cursor: isCurrentWorksheet ? "arrow" : "pointer",
     textAlign: "left", // Align text to the left
     width: "100%", // Ensure the button takes full width
-    borderRadius: "500px", // Make the button pill-shaped
+    borderRadius: "12px", // Make the button pill-shaped
     color: "inherit",
     boxSizing: "border-box",
     display: "flex",
@@ -561,8 +561,12 @@ function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
     whiteSpace: isCurrentWorksheet ? "normal" : "nowrap",
     overflow: "hidden",
     textOverflow: "ellipsis",
-    flexShrink: 1
+    flexShrink: 1,
+    // textWrap: "balance"
   }
+  
+  const worksheetID_without_WS = worksheetID.slice(0, -3)
+  
   if(isCurrentWorksheet){
     worksheetListItemStyle.backgroundColor = "#55587B26"
     
@@ -578,17 +582,17 @@ function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
     
     return (
       <div style={worksheetListItemStyle}>
-        <p style={worksheetNameParagraphStyle}>{ worksheetID }</p>
+        <p style={worksheetNameParagraphStyle}>{ worksheetID_without_WS }</p>
         <div style={{display: "flex"}}>
-          <MoveWorksheetButton />
-            <CloseButton buttonWidthString="24px" iconWidthString="14px" color="black" onClickFunction={onCloseClick} additionalStyleObject={{flexShrink: 0}} />
+          {/* <MoveWorksheetButton /> */}
+          <CloseButton buttonWidthString="24px" iconWidthString="14px" color="black" onClickFunction={onCloseClick} additionalStyleObject={{flexShrink: 0}} />
         </div>
       </div>
     )
   }
   return (
     <button style={worksheetListItemStyle} onClick={onClick}>
-      { worksheetID }
+      { worksheetID_without_WS }
     </button>
   )
 }
@@ -696,7 +700,7 @@ function StudentSessionCardHeader({studentName, studentIDNumber}){
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: constants.redColor,
-    padding: "14px 14px",
+    padding: "6px 10px",
     "--original-bg-color": constants.redColor,
     cursor: userIsMovingCurrentWorksheet ? "pointer" : "default"
   }
@@ -708,7 +712,7 @@ function StudentSessionCardHeader({studentName, studentIDNumber}){
     textOverflow: "ellipsis",
     color: "white",
     fontWeight: "normal",
-    fontSize: "1em"
+    fontSize: "12px"
   }
   
   const studentColorIndicatorCircleStyle = {

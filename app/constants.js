@@ -158,7 +158,7 @@ const constants = {
   redColor: "#C56D61",
   purpleColor: "#55587B",
   nearBlackColor: "#3d3d3d",
-  worksheetSelectionPanelWidth: "300px",
+  worksheetSelectionPanelWidth: "240px",
   colorMap,
   getGenericButtonStyle,
   CloseButton,
