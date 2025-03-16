@@ -66,6 +66,7 @@ function PagePanel(){
     boxSizing: "border-box",
     display: "flex"
   }
+  
   if(aWorksheetProcessIsBusy){
     wrapperForBothPages = (
       <div id="wrapper-for-both-pages" style={wrapperForBothPagesStyle}>
@@ -74,36 +75,39 @@ function PagePanel(){
     )
   } else {
     if(pageView == "double"){
-      /* 
-        Notes about using css aspect-ratio property on a child div:
-        
-        Typically, you can make a child div with a fixed aspect ratio fill its parent div without overflowing by setting its style like this:
-          aspect-ratio: x / y;
-          max-width: 100%;
-          max-height: 100%;   (setting width & height is not needed)
-                              (With these settings, child-div will either be 100% width of parent-div or 100% height depending on parent-div's aspect ratio, which is what you want)
-        Often, this is enough, but sometimes, this can cause the child-div to expand the parent-div, overriding the parent-div's width & height attributes.
-        To fix this, set the parent-div's container-type to "size". This means the parent-div's size will be calculated completely independently of its children, i.e. it will ignore its childrens' sizes no matter what. Container-type is usually meant to be used for container queries, but it can have affects outside of container queries as well, as in this case.
-        If this ever still doesn't work, investigate using cqw and cqh (container query units).
-      */
+      const wrapperForSinglePageStyle = {
+        position: "relative",
+        width: "50%",
+        marginRight: `${marginBetweenPages}px`,
+        height: "100%",
+        backgroundColor: "pink",
+        border: "1px solid red"
+      }
+      
       wrapperForBothPages = (
         <div id="wrapper-for-both-pages" style = {wrapperForBothPagesStyle}>
-          
-          <div id="wrapper-for-left-page" style={{width: "50%", height: "100%", marginRight: marginBetweenPages}}>
-            {/* PageContainer is the element that has an aspect-ratio property */}
+          <div id="wrapper-for-single-page" style={wrapperForSinglePageStyle}>
             <PageContainer isLeftOrRight="left" />
           </div>
-          <div id="wrapper-for-right-page" style={{width: "50%", height: "100%"}}>
+          <div id="wrapper-for-single-page" style={wrapperForSinglePageStyle}>
             <PageContainer isLeftOrRight="right" />
           </div>
-          
+            
         </div>
-      ) 
+      )
     }
     if(pageView == "single"){
+      const wrapperForSinglePageStyle = {
+        position: "relative",
+        width: "100%",
+        height: "100%",
+        backgroundColor: "pink",
+        border: "1px solid red"
+      }
+      
       wrapperForBothPages = (
         <div id="wrapper-for-both-pages" style = {wrapperForBothPagesStyle}>
-          <div id="wrapper-for-single-page" style={{width: "100%", height: "100%"}}>
+          <div id="wrapper-for-single-page" style={wrapperForSinglePageStyle}>
             <PageContainer isLeftOrRight="left" />
           </div>
         </div>
@@ -249,6 +253,13 @@ function PagePanelFooter(){
 }
 
 function PageContainer( {isLeftOrRight} ){
+  const pageContainerStyle = {
+    position: "absolute",
+    inset: 0,
+    marginLeft: "auto",
+    maxHeight: "100%",
+    aspectRatio: "496 / 702",
+  }
   // This container will be the exact same size as the page image
   const { currentPageOfWorksheet, getCurrentWorksheetID } = useSessionStateStore()
   const pageNumber = isLeftOrRight == "left" ? currentPageOfWorksheet : currentPageOfWorksheet + 1
@@ -264,14 +275,6 @@ function PageContainer( {isLeftOrRight} ){
       //The user has selected a worksheet that is downloaded, and a page of pageNumber exists for this worksheet
       pageImageBlob = worksheets[currentWorksheetID].pageBlobs[pageNumber]
     } 
-  }
-  const pageContainerStyle = {
-    maxWidth: "100%",
-    maxHeight: "100%",
-    // display: (pageImageBlob === null) ? "none" : "block",
-    aspectRatio: "496 / 702",
-    position: "relative",
-    marginLeft: "auto",
   }
   return (
     <div style={pageContainerStyle}>
