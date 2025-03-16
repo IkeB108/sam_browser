@@ -67,6 +67,43 @@ function PagePanel(){
     display: "flex"
   }
   
+  /*
+  Notes for making a div with aspect-ratio fill a parent div:
+  The solution used here, that works on all browsers (especially Safari) is here:
+  https://blog.duvallj.pw/posts/2024-09-14-safari-css-bug.html#user-content-fn-1
+  
+  In the case of this app, the parent div to fill happens to be #wrapper-for-single-page (which happens to fill half of available space in this app) and the child div is <PageContainer /> (ignore #wrapper-for-both-pages for the purpose of these notes).
+  
+  Set parent div style to:
+    position: relative;
+  
+  Set child div style to:
+    position: absolute;
+    inset: 0;
+    max-height: 100%;     <-- Important
+    aspect-ratio: x / y;
+    margin: auto;      <-- For centering the child, but afaik not needed for making 
+                           aspect ratio work correctly, even in Safari. In this app,
+                           the margin-left is set to auto for <PageContainer />.
+  
+  The blog's theory for why this works is this:
+  1. "position: absolute" and "inset: 0" sets the child container's width and height to match the parent (however, these don't affect the width and height properties directly. Both are still on "auto" so they can participate in aspect-ratio resolution)
+  2. Next, the browser applies "aspect-ratio: x / y", defaulting to setting the height based on the width
+  3. Next, the browser applies "max-height: 100%", clipping the height
+  4. Finally, "aspect-ratio: x / y" is applied again, this time setting the width based on the height, because width is still "auto".
+  
+  The explanation continues:
+  "
+    This explanation checks out with all my previous ones: some sort of “auto-resolution loop” happens, and we never saw it because earlier, one of the width/height was non-auto. It also now makes sense why this works in all browsers, because the order of aspect-ratio/max-height no longer matters; aspect-ratio gets applied twice anyways.
+
+    What margin: auto does then, is center the div in both axes (and in Safari’s case, make it so the vertical margin can no longer be negative, because of course Safari is still special). You can pin the container to a given side by setting margin-<side>: 0 afterwards.
+
+    Phew!! Box sizing is hard, man.
+  "
+  
+  
+  */
+  
   if(aWorksheetProcessIsBusy){
     wrapperForBothPages = (
       <div id="wrapper-for-both-pages" style={wrapperForBothPagesStyle}>
@@ -75,21 +112,25 @@ function PagePanel(){
     )
   } else {
     if(pageView == "double"){
-      const wrapperForSinglePageStyle = {
+      const wrapperForLeftPageStyle = {
         position: "relative",
         width: "50%",
         marginRight: `${marginBetweenPages}px`,
         height: "100%",
-        backgroundColor: "pink",
-        border: "1px solid red"
+      }
+      
+      const wrapperForRightPageStyle = {
+        position: "relative",
+        width: "50%",
+        height: "100%",
       }
       
       wrapperForBothPages = (
         <div id="wrapper-for-both-pages" style = {wrapperForBothPagesStyle}>
-          <div id="wrapper-for-single-page" style={wrapperForSinglePageStyle}>
+          <div id="wrapper-for-single-page" style={wrapperForLeftPageStyle}>
             <PageContainer isLeftOrRight="left" />
           </div>
-          <div id="wrapper-for-single-page" style={wrapperForSinglePageStyle}>
+          <div id="wrapper-for-single-page" style={wrapperForRightPageStyle}>
             <PageContainer isLeftOrRight="right" />
           </div>
             
@@ -101,8 +142,6 @@ function PagePanel(){
         position: "relative",
         width: "100%",
         height: "100%",
-        backgroundColor: "pink",
-        border: "1px solid red"
       }
       
       wrapperForBothPages = (
