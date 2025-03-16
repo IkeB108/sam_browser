@@ -6,7 +6,7 @@ import WorksheetViewer from './components/WorksheetViewer.js'
 import SettingsPage from './components/SettingsPage.js'
 import { retrieveWorksheetsFromIndexedDB, setStatusMessageOfWorksheetProcess } from "./components/SettingsPage.js"
 import { useUserHasPinchZoomedStore } from "./stores.js"
-
+import constants from "./constants.js"
 //Keys in allPages use PascalCasing to match the react component names
 const allPages = {
   "WorksheetViewer": <WorksheetViewer />,
@@ -46,10 +46,10 @@ const createAllStudentsStore = function(set){ //Store initializer
     */
     let allStudentsInLocalStorage = localStorage.getItem("allStudents")
     if(allStudentsInLocalStorage !== null){
-      console.log("Found allStudents in local storage.")
+      //console.log("Found allStudents in local storage.")
       return { allStudents: JSON.parse(allStudentsInLocalStorage) }
     } else {
-      console.log("Didn't find allStudents in local storage.")
+      //console.log("Didn't find allStudents in local storage.")
       return { allStudents: {} }
     }
   }
@@ -76,15 +76,15 @@ const useAllStudentsStore = create(createAllStudentsStore) //Returns a store hoo
 //Filler data for debugging
 const fillerStudentData = {
   "1": { //id number for the student (to avoid glitches w same-name students)
-    "name": "Bill",
-    "color": "red"
+    "name": "Sidon",
+    "color": "pink"
   },
   "2": {
-    "name": "Ted",
-    "color": "green"
+    "name": "Yunobo",
+    "color": "purple"
   },
   "3": {
-    "name": "Alice",
+    "name": "Tulin",
     "color": "blue"
   }
 }
@@ -119,8 +119,12 @@ const useSessionStateStore = create( (set)=> ({
   //   set( () => ({ highestPositionInWorksheetSelectionPanel: highestPositionInWorksheetSelectionPanel + 1 }) )
   // }
   openStudents: [
-    {"openWorksheets": [ "(OLD) 03.01-05 HF (USA) 1-1 WS", "(OLD) 3.02 C10000 (USA) 1-1 WS" ], "studentIDNumber": "1"},
-    {"openWorksheets": [], "studentIDNumber": "2"}
+    {"openWorksheets": [ 
+      {id: "(OLD) 03.01-05 HF (USA) 1-1 WS", pageLeftOff: 0},
+      {id: "(OLD) 03.06-12 TP (USA) 1-1 WS", pageLeftOff: 0}
+    ], "studentIDNumber": "1"},
+    {"openWorksheets": [], "studentIDNumber": "2"},
+    // {"openWorksheets": [], "studentIDNumber": "3"}
   ],
   setOpenStudents: (newValue)=>{ set( ()=>({ openStudents: newValue }) ) },
   deleteOpenStudent: (studentIDNumber)=>{
@@ -136,14 +140,30 @@ const useSessionStateStore = create( (set)=> ({
   setCurrentPage: (newValue)=>{ set( ()=>({ currentPage: newValue }) ) },
   currentWorksheet: { openStudentIndex: null, worksheetIndex: null },
   setCurrentWorksheet: (openStudentIndex, worksheetIndex)=>{ set( ()=>({ currentWorksheet: { openStudentIndex: openStudentIndex, worksheetIndex: worksheetIndex } }) ) },
+  getCurrentWorksheetID: ()=>{
+    const { openStudents, currentWorksheet } = useSessionStateStore.getState()
+    if(currentWorksheet.openStudentIndex === null || currentWorksheet.worksheetIndex === null) return null
+    return openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex].id
+  },
   userIsMovingCurrentWorksheet: false,
   setUserIsMovingCurrentWorksheet: (newValue)=>{ set( ()=>({ userIsMovingCurrentWorksheet: newValue }) ) },
   userCanClickAnywhereToDisableMovingCurrentWorksheet: false,
-  setUserCanClickAnywhereToDisableMovingCurrentWorksheet: (newValue)=>{ set( ()=>({ userCanClickAnywhereToDisableMovingCurrentWorksheet: newValue }) ) }
+  setUserCanClickAnywhereToDisableMovingCurrentWorksheet: (newValue)=>{ set( ()=>({ userCanClickAnywhereToDisableMovingCurrentWorksheet: newValue }) ) },
+  currentPageOfWorksheet: 0, //Value of the page on the left
+  setCurrentPageOfWorksheet: (newValue)=>{ 
+    set( ()=>({ currentPageOfWorksheet: newValue }) )
+    const { openStudents, currentWorksheet } = useSessionStateStore.getState()
+    if (currentWorksheet.openStudentIndex !== null && currentWorksheet.worksheetIndex !== null) {
+      openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex].pageLeftOff = newValue
+      set({ openStudents: [...openStudents] })
+    }
+  },
 }))
 
 const useUserSettingsStore = create( (set)=> ({
   //settings go here
+  pageView: "double", //single or double
+  setPageView: (newValue)=>{ set( ()=>({ pageView: newValue }) ) },
 }))
 
 export function calcUserHasPinchZoomed(){
@@ -168,6 +188,7 @@ const worksheets = {}
 
 function HomePage() {
   const { userHasPinchZoomed } = useUserHasPinchZoomedStore()
+  const { pageView } = useUserSettingsStore()
   //The function in this useEffect will run every time HomePage is rerendered,
   //which will happen every time userHasPinchZoomed changes, which should be
   //at the start and end of pinch zoom gestures, but not in between.
@@ -179,7 +200,6 @@ function HomePage() {
     document.addEventListener("touchend", onDocumentTouchEndOrMouseUp)
     document.addEventListener("mouseup", onDocumentTouchEndOrMouseUp)
     updateUserHasPinchZoomedOnResize()
-    console.log("triggered")
     return ()=> {
       window.visualViewport.removeEventListener("resize", updateUserHasPinchZoomedOnResize)
       document.removeEventListener("touchend", onDocumentTouchEndOrMouseUp)
@@ -193,7 +213,10 @@ function HomePage() {
     fontSize: "18px",
     height: "100%",
     width: "100%",
-    touchAction: userHasPinchZoomed ? "auto" : "pinch-zoom" //If the user has pinch zoomed, allow panning. If not, disable panning
+    maxWidth: (pageView == "double") ? "1500px" : "1000px",
+    color: constants.nearBlackColor,
+    touchAction: userHasPinchZoomed ? "auto" : "pinch-zoom", //If the user has pinch zoomed, allow panning. If not, disable panning
+    margin: "0 auto"
   }
   
   const sessionStateStore = useSessionStateStore()
@@ -207,6 +230,7 @@ function HomePage() {
     //useAllStudentsStore.getState().initAllStudents();
     window.useAllStudentsStore = useAllStudentsStore; //call useAllStudentsStore.getState() when accessing in the dev console.
     window.useSessionStateStore = useSessionStateStore;
+    window.useUserSettingsStore = useUserSettingsStore;
     
     //On page load, retrieve worksheets from IndexedDB if any. This function is imported from SettingsPage.js
     retrieveWorksheetsFromIndexedDB()
@@ -219,7 +243,6 @@ function HomePage() {
   const onClick = function(){
     if(currentPage == "WorksheetViewer"){
       if(sessionStateStore.userIsMovingCurrentWorksheet && sessionStateStore.userCanClickAnywhereToDisableMovingCurrentWorksheet){
-        console.log("is called")
         sessionStateStore.setUserIsMovingCurrentWorksheet(false)
         sessionStateStore.setUserCanClickAnywhereToDisableMovingCurrentWorksheet(false)
       }
@@ -233,8 +256,7 @@ function HomePage() {
 }
 
 const onDocumentTouchEndOrMouseUp = function(){
-  //Pass in "true" for callAgainBoolean to trigger the function a second time after 200ms.
-  updateUserHasPinchZoomedIfChanged(true)
+  updateUserHasPinchZoomedIfChanged(false)
 }
 
 function updateUserHasPinchZoomedIfChanged( callAgainBoolean ){

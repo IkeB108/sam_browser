@@ -2,7 +2,7 @@ const colorMap = {
   "red": "#BD1452",
   "orange": "#FE9350",
   "yellow": "#FFFB79",
-  "green": "#53C162",
+  "green": "#91D480",
   "cyan": "#70D9FF",
   "blue": "#2D4CA8",
   "purple": "#8B2F99",
@@ -43,6 +43,36 @@ function getGenericButtonStyle( primarySecondaryOrTertiary ){
   
 }
 
+export function GenericPillButton({ children, onClickFunction, isFilled, isShort, additionalStyleObject}){
+  const verticalPadding = isShort ? "10px" : "14px"
+  const pillButtonStyle = {
+    borderRadius: "200px",
+    paddingTop: verticalPadding,
+    paddingBottom: verticalPadding,
+    paddingLeft: "24px",
+    paddingRight: "24px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    border:          isFilled ? "none"                  : "1px solid #3d3d3d",
+    backgroundColor: isFilled ? (constants.purpleColor) : "white",
+    color:           isFilled ? "white"                 : "#3d3d3d",
+    fontFamily: "Roboto, sans-serif",
+    fontWeight: 500,
+    fontSize: "16px",
+    cursor: "pointer"
+  }
+  
+  if(additionalStyleObject){
+    Object.assign(pillButtonStyle, additionalStyleObject)
+  }
+  return (
+    <button style={pillButtonStyle} onClick={onClickFunction}>
+      {children}
+    </button>
+  )
+}
+
 
 
 // function CloseButton(padding, onClickFunction){
@@ -65,7 +95,7 @@ function getGenericButtonStyle( primarySecondaryOrTertiary ){
 // }
 
 
-function CloseButton({ buttonWidthString, iconWidthString, color, onClickFunction, additionalStyleObject }){
+export function CloseButton({ buttonWidthString, iconWidthString, color, onClickFunction, additionalStyleObject }){
   const closeButtonStyle = {
     background: "none",
     border: "none",
@@ -91,6 +121,33 @@ function CloseButton({ buttonWidthString, iconWidthString, color, onClickFunctio
   )
 }
 
+export function GenericModal({widthSetting, heightSetting, children, additionalStyleObject}){
+  const modalStyle = {
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    width: widthSetting,
+    height: heightSetting,
+    backgroundColor: "white",
+    boxShadow: "0 4px 8px rgba(0, 0, 0, 0.45)",
+    zIndex: 1,
+    overflow: "auto",
+    padding: "34px",
+    borderRadius: "24px",
+  }
+  
+  if (additionalStyleObject){
+    Object.assign(modalStyle, additionalStyleObject)
+  }
+  
+  return (
+    <div style={modalStyle}>
+      {children}
+    </div>
+  )
+}
+
 
 const useBasePath = process.env.NEXT_PUBLIC_USEBASEPATH === "true" //grab the NEXT_PUBLIC_USEBASEPATH variable that was declared when “pnpm next build” was called
 const basePathToUse = "/sam_browser/out" //No trailing slash. Change to Github repo name if using Github pages.
@@ -100,6 +157,7 @@ const constants = {
   hardBorderColor: "#000000",
   redColor: "#C56D61",
   purpleColor: "#55587B",
+  nearBlackColor: "#3d3d3d",
   worksheetSelectionPanelWidth: "300px",
   colorMap,
   getGenericButtonStyle,
@@ -110,6 +168,6 @@ const constants = {
   iconsFolderPath: (useBasePath ? basePathToUse : "") + "/icons",
   idbDatabaseVersion: 1, //This is not the version number for the latest iteration of worksheets downloaded. Instead, this is a version number for the format/structure of the IDB database.
 }
-export { CloseButton }
+
 export default constants
 // export { colorMap, panelPadding, worksheetSelectionPanelWidth, getGenericButtonStyle }
