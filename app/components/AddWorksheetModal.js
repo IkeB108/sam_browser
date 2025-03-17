@@ -18,7 +18,7 @@ export function AddWorksheetModal(){
     studentName = allStudents[studentAddingFor].name
   }
   return (
-    <GenericModal blockBehind={true} widthSetting="90%" heightSetting="90%" additionalStyleObject={{boxSizing: "border-box", display: "flex", flexDirection:"column", maxWidth: "1000px", maxHeight: "700px"}}>
+    <GenericModal blockBehind={true} widthSetting="96%" heightSetting="96%" additionalStyleObject={{boxSizing: "border-box", display: "flex", flexDirection:"column", maxWidth: "1000px", maxHeight: "700px"}}>
       <div width="100%" style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}> {/*Container for modal title and close button*/}
         <h1 style={{
           "fontFamily": "Roboto, sans-serif",
@@ -60,7 +60,7 @@ function Keypad(){
     }
     let innerContent;
     if(val == "backspace"){
-      innerContent = <img src={`${constants.iconsFolderPath}/backspace.svg`} alt="Backspace" style={{width: "50%", aspectRatio: "1"}} />
+      innerContent = <img src={ constants.iconsFolderPath + "/backspace.svg"} alt="Backspace" style={{width: "50%", aspectRatio: "1"}} />
     } else if(val == "clear"){
       innerContent = "Clear"
       keypadKeyStyle.backgroundColor = constants.redColor

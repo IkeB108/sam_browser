@@ -135,7 +135,7 @@ export function GenericModal({widthSetting, heightSetting, children, additionalS
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.45)",
     zIndex: 3,
     overflow: "auto",
-    padding: "34px",
+    padding: "20px",
     borderRadius: "24px",
   }
   
