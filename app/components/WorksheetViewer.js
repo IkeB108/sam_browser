@@ -214,7 +214,7 @@ function PagePanelFooter(){
       {
         paddingLeft: "min(1.5vw, 24px)", 
         paddingRight: "min(1.5vw, 24px)",
-        zIndex: "2"
+        zIndex: "2" //Ensures that the button is clickable when it goes outside the bounds of its parent
       }
     }
     onClickFunction={ ()=>{console.log("log worksheet button clicked")} }>
@@ -267,7 +267,7 @@ function PagePanelFooter(){
       {
         paddingLeft: "min(2vw, 30px)",
         paddingRight: "min(2vw, 30px)",
-        zIndex: "2"
+        zIndex: "2" //Ensures that the button is clickable when it goes outside the bounds of its parent
       }
     }
     onClickFunction={  ()=>{ changePage("prev") } }>
@@ -282,7 +282,7 @@ function PagePanelFooter(){
       {
         paddingLeft: "min(2vw, 30px)",
         paddingRight: "min(2vw, 30px)",
-        zIndex: "2"
+        zIndex: "2" //Ensures that the button is clickable when it goes outside the bounds of its parent
       }   
     }
     onClickFunction={  ()=>{ changePage("next") } }>
@@ -480,8 +480,12 @@ function WorksheetSelectionPanelFooter(){
 
 function StudentSessionCard({studentIDNumber}){
   const { allStudents } = useAllStudentsStore.getState();
-  const { openStudents } = useSessionStateStore.getState();
-  let student = allStudents[studentIDNumber]
+  let student;
+  if(studentIDNumber == "other"){
+    student = {"name": "Other", "color": "none"}
+  } else {
+    student = allStudents[studentIDNumber]
+  }
   const studentSessionCardStyle = {
     width: "100%",
     backgroundColor: "white",
@@ -492,6 +496,10 @@ function StudentSessionCard({studentIDNumber}){
     marginBottom: "12px",
     overflow: "hidden",
     position: "relative",
+  }
+  
+  if(studentIDNumber == "other"){
+    studentSessionCardStyle.border = "1px solid #eeeeee"
   }
   
   return (
@@ -520,6 +528,10 @@ function StudentSessionCardWorksheetList({ studentIDNumber }){
     padding: "10px 4px",
     overflowY: "auto",
     height: "100%"
+  }
+  
+  if(studentIDNumber == "other"){
+    worksheetListStyle.paddingTop = "0px"
   }
   
   const {thisStudent, thisStudentIndex} = getStudentFromOpenStudents(studentIDNumber)
@@ -642,7 +654,9 @@ function MoveWorksheetButton(){
 
 function onMoveWorksheetClick(){
   //Toggle whether user is moving a worksheet
-  const { userIsMovingCurrentWorksheet, setUserIsMovingCurrentWorksheet, setUserCanClickAnywhereToDisableMovingCurrentWorksheet } = useSessionStateStore.getState()
+  const { userIsMovingCurrentWorksheet, setUserIsMovingCurrentWorksheet, setUserCanClickAnywhereToDisableMovingCurrentWorksheet, currentWorksheet } = useSessionStateStore.getState()
+  const aWorksheetIsSelected = currentWorksheet.openStudentIndex !== null
+  if(!aWorksheetIsSelected) return;
   if(!userIsMovingCurrentWorksheet){
     setUserCanClickAnywhereToDisableMovingCurrentWorksheet(true)
   }
@@ -691,7 +705,7 @@ function TimerStartButton({ studentIDNumber, styleObject }){
 function AddWorksheetButton({ studentIDNumber, styleObject }){
   const onClick = function(){
     useAddWorksheetModalIsOpenStore.getState().setAddWorksheetModalIsOpen(true)
-    console.log("Add worksheet for " + studentIDNumber)
+    useAddWorksheetModalIsOpenStore.getState().setStudentAddingFor(studentIDNumber)
   }
   return (
     <button style={styleObject} onClick={onClick}>
@@ -704,7 +718,7 @@ function AddStudentButton(){
   return (
     <GenericPillButton isFilled={true} isShort={true} onClickFunction={()=>{console.log("Add student")}} additionalStyleObject={{margin: "0 auto", paddingLeft: "30px", paddingRight: "30px"}} >
       <img src={constants.iconsFolderPath + "/add_white.svg"} alt="Add student" style={{ width: "12px", height: "12px", marginRight: "8px" }}/>
-      <p style={{margin: "0", padding: "0"}}>Add Student</p>
+      <p style={{margin: "0", padding: "0"}}>Add Students</p>
     </GenericPillButton>
   )
 }
@@ -712,18 +726,25 @@ function AddStudentButton(){
 function StudentSessionCardHeader({studentName, studentIDNumber}){
   const { allStudents } = useAllStudentsStore.getState();
   const { userIsMovingCurrentWorksheet, openStudents, currentWorksheet } = useSessionStateStore.getState()
-  let student = allStudents[studentIDNumber]
-  const headerStyle = {
+  let student;
+  if(studentIDNumber == "other"){
+    student = { "name": "Other", "color": "none" }
+  } else {
+    student = allStudents[studentIDNumber]
+  }
+  
+  let headerStyle = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: constants.redColor,
     padding: "6px 10px",
     "--original-bg-color": constants.redColor,
-    cursor: userIsMovingCurrentWorksheet ? "pointer" : "default"
+    "--pulsate-bg-color": "#eb9286",
+    cursor: userIsMovingCurrentWorksheet ? "pointer" : "default",
   }
 
-  const nameStyle = {
+  let nameStyle = {
     margin: 0,
     whiteSpace: "nowrap",
     overflow: "hidden",
@@ -733,12 +754,22 @@ function StudentSessionCardHeader({studentName, studentIDNumber}){
     fontSize: "12px"
   }
   
-  const studentColorIndicatorCircleStyle = {
+  let studentColorIndicatorCircleStyle = {
     width: "18px",
     height: "18px",
     borderRadius: "50%",
     backgroundColor: constants.colorMap[student.color],
     marginRight: "10px"
+  }
+  
+  if(studentIDNumber == "other"){
+    studentColorIndicatorCircleStyle.backgroundColor = "#00000000"
+    headerStyle.backgroundColor = "white"
+    headerStyle.justifyContent = "center"
+    headerStyle.padding = "10px 0px"
+    headerStyle["--original-bg-color"] = "rgb(223, 223, 223)"
+    headerStyle["--pulsate-bg-color"] = "white"
+    nameStyle.color = "black"
   }
   
   const leftAlignedContainerStyle = {
@@ -763,17 +794,28 @@ function StudentSessionCardHeader({studentName, studentIDNumber}){
     }
   }
   
+  // const useCloseButton = (!userIsMovingCurrentWorksheet && studentIDNumber !== "other")
+  // const emptyDivToReplaceCloseButton = (
+  //   <div style={{width: "24px", height: "24px"}}></div>
+  // )
+  let closeButtonOrSubstitute = <CloseButton buttonWidthString="24px" iconWidthString="14px" color="white" onClickFunction={onCloseClick} />
+  if(userIsMovingCurrentWorksheet){
+    closeButtonOrSubstitute = <div style={{width: "24px", height: "24px"}}></div>
+  }
+  if(studentIDNumber == "other"){
+    closeButtonOrSubstitute = null
+  }
   return (
     <div style={headerStyle}
     className={  userIsMovingCurrentWorksheet ? "pulsatingHeader" : null  }
     onClick = { userIsMovingCurrentWorksheet ? moveWorksheetToThisStudent : null }
     >
       <div style={leftAlignedContainerStyle}>
-        <div style={studentColorIndicatorCircleStyle}></div>
+        { (studentIDNumber == "other") ? null : <div style={studentColorIndicatorCircleStyle}></div>}
         <h1 style={nameStyle}>{studentName}</h1>
       </div>
       {
-        userIsMovingCurrentWorksheet ? null : <CloseButton buttonWidthString="24px" iconWidthString="14px" color="white" onClickFunction={onCloseClick} />
+        closeButtonOrSubstitute
       }
     </div>
   )

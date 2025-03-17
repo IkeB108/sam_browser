@@ -124,6 +124,7 @@ const useSessionStateStore = create( (set)=> ({
       {id: "(OLD) 03.06-12 TP (USA) 1-1 WS", pageLeftOff: 0}
     ], "studentIDNumber": "1"},
     {"openWorksheets": [], "studentIDNumber": "2"},
+    {"openWorksheets": [], "studentIDNumber": "other"}
     // {"openWorksheets": [], "studentIDNumber": "3"}
   ],
   setOpenStudents: (newValue)=>{ set( ()=>({ openStudents: newValue }) ) },

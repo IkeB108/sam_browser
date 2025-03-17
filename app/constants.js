@@ -121,7 +121,9 @@ export function CloseButton({ buttonWidthString, iconWidthString, color, onClick
   )
 }
 
-export function GenericModal({widthSetting, heightSetting, children, additionalStyleObject}){
+export function GenericModal({widthSetting, heightSetting, children, additionalStyleObject, blockBehind}){
+  //blockBehind = boolean: whether to disable interactivity of everything behind modal
+  
   const modalStyle = {
     position: "fixed",
     top: "50%",
@@ -131,7 +133,7 @@ export function GenericModal({widthSetting, heightSetting, children, additionalS
     height: heightSetting,
     backgroundColor: "white",
     boxShadow: "0 4px 8px rgba(0, 0, 0, 0.45)",
-    zIndex: 1,
+    zIndex: 3,
     overflow: "auto",
     padding: "34px",
     borderRadius: "24px",
@@ -140,12 +142,22 @@ export function GenericModal({widthSetting, heightSetting, children, additionalS
   if (additionalStyleObject){
     Object.assign(modalStyle, additionalStyleObject)
   }
-  
-  return (
-    <div style={modalStyle}>
-      {children}
-    </div>
-  )
+  if(!blockBehind){
+    return (
+      <div style={modalStyle}>
+        {children}
+      </div>
+    )
+  }
+  if(blockBehind){
+    return (
+      <div style={{position: "fixed", top: "0", left: "0", width: "100%", height: "100%", backgroundColor: "#00000055", zIndex: "3"}}>
+        <div style={modalStyle}>
+          {children}
+        </div>
+      </div>
+    )
+  }
 }
 
 

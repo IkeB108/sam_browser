@@ -20,7 +20,7 @@
   }
   50% {
     /* border-color: #611c13ff; */
-    background-color: #eb9286;
+    background-color: var(--pulsate-bg-color);
   }
   100% {
     /* border-color: #611c1300; */
