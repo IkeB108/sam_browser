@@ -60,7 +60,7 @@ function Keypad(){
     }
     let innerContent;
     if(val == "backspace"){
-      innerContent = <img src={ constants.iconsFolderPath + "/backspace.svg"} alt="Backspace" style={{width: "50%", aspectRatio: "1"}} />
+      innerContent = <img src={ constants.iconsFolderPath + "/backspace.svg"} alt="Backspace" style={{width: "26px", height:"26px"}} />
     } else if(val == "clear"){
       innerContent = "Clear"
       keypadKeyStyle.backgroundColor = constants.redColor
