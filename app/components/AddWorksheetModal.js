@@ -1,8 +1,8 @@
-import { GenericModal, CloseButton, GenericPillButton } from "../constants.js";
+import { GenericModal, CloseButton, GenericPillButton, PressDownButton } from "../constants.js";
 import constants from "../constants.js";
 import { useAddWorksheetModalIsOpenStore } from "../stores"
 import { useSessionStateStore, useAllStudentsStore } from "../page.js"
-import {  useState } from "react";
+import {  useState, useRef, useEffect } from "react";
 import { create } from "zustand";
 
 const useSearchInputValueStore = create((set) => ({
@@ -47,6 +47,9 @@ export function AddWorksheetModal(){
         <div style={{flexGrow: "1", boxSizing: "border-box", marginRight: "20px"}}>
           <SearchBar />
           <LevelButtonsRow />
+          <PressDownButton functionToTrigger={ ()=> { console.log("clicked") } } style={{padding: "10px"}}>
+            press down button here
+          </PressDownButton>
         </div>
         
         <Keypad />
@@ -111,6 +114,7 @@ function LevelButtonsRow(){
     gap: "8px",
     marginTop: "20px",
     flexWrap: "wrap"
+    
   }
   return (
     <div style={levelButtonsRowStyle}>
@@ -146,21 +150,7 @@ function LevelButton({levelInteger}){
 }
 
 function Keypad(){
-  const onKeypadKeyPress = function(val){
-    if(val == "clear"){
-      useSearchInputValueStore.getState().setSearchInputValue("")
-      return
-    }
-    if(val == "backspace"){
-      const { searchInputValue, setSearchInputValue } = useSearchInputValueStore.getState()
-      setSearchInputValue(searchInputValue.slice(0, -1))
-      return
-    }
-    if(val == "open"){
-      return
-    }
-    useSearchInputValueStore.getState().appendToSearchInputValue(val)
-  }
+  
   const KeypadKey = ({val}) => {
     const keypadKeyStyle = {
       backgroundColor: "white",
@@ -177,6 +167,23 @@ function Keypad(){
       alignItems: "center",
       justifyContent: "center",
     }
+    
+    const onKeypadKeyPress = function(val){
+      if(val == "clear"){
+        useSearchInputValueStore.getState().setSearchInputValue("")
+        return
+      }
+      if(val == "backspace"){
+        const { searchInputValue, setSearchInputValue } = useSearchInputValueStore.getState()
+        setSearchInputValue(searchInputValue.slice(0, -1))
+        return
+      }
+      if(val == "open"){
+        return
+      }
+      useSearchInputValueStore.getState().appendToSearchInputValue(val)
+    }
+    
     let innerContent;
     if(val == "backspace"){
       innerContent = <img src={ constants.iconsFolderPath + "/backspace.svg"} alt="Backspace" style={{width: "26px", height:"26px"}} />
@@ -195,12 +202,12 @@ function Keypad(){
       innerContent = val
     }
     return (
-      <button
-        onMouseDown={ (e)=>{ e.preventDefault; onKeypadKeyPress(val) } }
-        onTouchStart={ (e) => { e.preventDefault; onKeypadKeyPress(val) } }
-        style={keypadKeyStyle}>
+      <PressDownButton
+        style={keypadKeyStyle}
+        functionToTrigger={ ()=> { onKeypadKeyPress(val) } }
+      >
         {innerContent}
-      </button>
+      </PressDownButton>
     )
   }
   

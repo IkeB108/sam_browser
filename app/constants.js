@@ -1,3 +1,6 @@
+'use client'
+import { useRef, useEffect } from "react"
+
 const colorMap = {
   "red": "#BD1452",
   "orange": "#FE9350",
@@ -167,6 +170,57 @@ export function GenericModal({widthSetting, heightSetting, children, additionalS
   }
 }
 
+export function PressDownButton(props){ //Expects a functionToTrigger prop
+  const buttonElementRef = useRef(null)
+  
+  if(!props.functionToTrigger){
+    console.error("PressDownButton requires a functionToTrigger prop")
+  }
+  if(props.onClick){
+    console.warn("PressDownButton is not meant to use onClick prop")
+  }
+  
+  /*
+  We want this button to be triggered on mousedown or touchstart, rather than
+  a regular click event (to allow for a bit of finger or cursor sliding).
+  In theory, we could add onMouseDown and onTouchStart
+  properties to the <button> in the return statement the "React way",
+  but that seems to sometimes cause the event to trigger twice.
+  The fix is to call event.preventDefault() from within the event handler.
+  However, for some reason, event.preventDefault()
+  won't work in React's onMouseDown or onTouchStart handlers, seemingly because
+  react is invoking these event handlers in "passive" mode. So instead, we have
+  to add the event listeners manually on component mount by using useRef() to
+  reference the html button directly.
+  */
+ 
+  const onMouseDownOrTouchStart = function(e){
+    e.preventDefault()
+    props.functionToTrigger()
+  }
+ 
+  useEffect(() => {
+    buttonElementRef.current.addEventListener("mousedown", onMouseDownOrTouchStart)
+    buttonElementRef.current.addEventListener("touchstart", onMouseDownOrTouchStart)
+    return () => {
+      //This return statement removes event listeners and should only be needed for
+      //react's strict mode, which doesn't appear in production.
+      //Without this return statement, the event listeners would be added twice
+      //in strict mode.
+      if(buttonElementRef.current){
+        buttonElementRef.current.removeEventListener("mousedown", onMouseDownOrTouchStart)
+        buttonElementRef.current.removeEventListener("touchstart", onMouseDownOrTouchStart)
+      }
+    }
+  }, [])
+  
+  const propsToPass = {...props}
+  delete propsToPass.functionToTrigger
+  
+  return (
+    <button ref={buttonElementRef} {...propsToPass}> {props.children} </button>
+  )
+}
 
 const useBasePath = process.env.NEXT_PUBLIC_USEBASEPATH === "true" //grab the NEXT_PUBLIC_USEBASEPATH variable that was declared when “pnpm next build” was called
 const basePathToUse = "/sam_browser/out" //No trailing slash. Change to Github repo name if using Github pages.

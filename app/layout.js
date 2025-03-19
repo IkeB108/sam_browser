@@ -1,6 +1,10 @@
 import Script from "next/Script";
 import constants from "./constants.js";
-const cssFilePath = (constants.useBasePath ? constants.basePathToUse : "") + "/global.css"
+
+const useBasePath = process.env.NEXT_PUBLIC_USEBASEPATH === "true" //grab the NEXT_PUBLIC_USEBASEPATH variable that was declared when “pnpm next build” was called
+const basePathToUse = "/sam_browser/out" //No trailing slash. Change to Github repo name if using Github pages.
+const webWorkersFolderPath = (useBasePath ? basePathToUse : "") + "/web_workers_for_ws_images"
+const cssFilePath = (useBasePath ? basePathToUse : "") + "/global.css"
 export const metadata = {
   title: 'SAM Browser',
   description: '',
@@ -11,6 +15,7 @@ export default function RootLayout({ children }) {
     margin: "0 auto",
     height: "100%",
   }
+  
   return (
     <html lang="en" style={{height: "100%"}}>
       <head>
@@ -24,7 +29,7 @@ export default function RootLayout({ children }) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet" />
-        <script src={constants.webWorkersFolderPath + "/untar.js"} />
+        <script src={ webWorkersFolderPath + "/untar.js"} />
       </head>
       <body style={bodyStyle}>{children}</body>
     </html>
