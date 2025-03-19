@@ -166,8 +166,8 @@ function Keypad(){
       backgroundColor: "white",
       border: "1px solid #DAD6D5",
       boxShadow: "0px 1px 4px #0000001a",
-      width: "65px",
-      height: "65px",
+      width: "55px",
+      height: "55px",
       color: "#3D3D3D",
       borderRadius: "10px",
       fontFamily: "Roboto, sans-serif",
@@ -195,7 +195,10 @@ function Keypad(){
       innerContent = val
     }
     return (
-      <button onMouseDown={ ()=>{ onKeypadKeyPress(val) } } style={keypadKeyStyle}>
+      <button
+        onMouseDown={ (e)=>{ e.preventDefault; onKeypadKeyPress(val) } }
+        onTouchStart={ (e) => { e.preventDefault; onKeypadKeyPress(val) } }
+        style={keypadKeyStyle}>
         {innerContent}
       </button>
     )
