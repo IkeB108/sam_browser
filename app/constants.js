@@ -100,8 +100,6 @@ export function CloseButton({ buttonWidthString, iconWidthString, color, onClick
     background: "none",
     border: "none",
     cursor: "pointer",
-    width: buttonWidthString,
-    height: buttonWidthString,
     padding: "0px",
     verticalAlign: "middle",
     display: "flex",
@@ -110,13 +108,22 @@ export function CloseButton({ buttonWidthString, iconWidthString, color, onClick
     boxSizing: "border-box"
   }
   
+  if(buttonWidthString){
+    closeButtonStyle.width = buttonWidthString
+    closeButtonStyle.height = buttonWidthString
+  }
+  
   if (additionalStyleObject){
     Object.assign(closeButtonStyle, additionalStyleObject)
+  }
+  let iconStyle = null
+  if(iconWidthString){
+    iconStyle = { width: iconWidthString, height: iconWidthString }
   }
   
   return (
     <button style={closeButtonStyle} onClick={onClickFunction}>
-      <img src={`${constants.iconsFolderPath}/close_${color}.svg`} alt="Close" style={{ width: iconWidthString, height: iconWidthString }} />
+      <img src={`${constants.iconsFolderPath}/close_${color}.svg`} alt="Close" style={iconStyle} />
     </button>
   )
 }
