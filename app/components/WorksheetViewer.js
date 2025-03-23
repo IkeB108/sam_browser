@@ -124,6 +124,7 @@ function WorksheetViewer(){
   }, [])
   const { addWorksheetModalIsOpen } = useAddWorksheetModalIsOpenStore()
   const userIsDraggingPages = usePageDraggingStore( (state) => state.userIsDraggingPages )
+  const madisonModeActive = useUserSettingsStore( (state) => state.madisonMode )
   const worksheetViewerStyle = {
     width: "100%",
     height: "100%",
@@ -131,7 +132,8 @@ function WorksheetViewer(){
     display: "flex",
     flexShrink: 0,
     containerType: "size",
-    cursor: userIsDraggingPages ? "ew-resize" : "default"
+    cursor: userIsDraggingPages ? "ew-resize" : "default",
+    backgroundColor: madisonModeActive ? "#ffc6f3" : "white"
   }
   
   
@@ -410,7 +412,7 @@ function PagePanelFooter(){
         { togglePageViewButton }
         { togglePageVisibilityButton }
         { moveButton }
-        { logWorksheetButton }
+        { /* logWorksheetButton */ }
       </div>
       <div style={footerSegmentStyle}>
         { prevPageButton }
@@ -608,7 +610,7 @@ function WorksheetSelectionPanelFooter(){
   
   return (
     <div style={worksheetSelectionPanelFooterStyle}>
-      { viewLogButton }
+      { /* viewLogButton */ }
       { settingsButton }
     </div>
   )
@@ -672,7 +674,7 @@ function StudentSessionCardWorksheetList({ studentIDNumber }){
   
   const {thisStudent, thisStudentIndex} = getStudentFromOpenStudents(studentIDNumber)
   
-  const worksheetList = []
+  let worksheetList = []
   
   for(let i = 0; i < thisStudent.openWorksheets.length; i++){
     const worksheetID = thisStudent.openWorksheets[i].id
@@ -695,6 +697,14 @@ function StudentSessionCardWorksheetList({ studentIDNumber }){
     }
     
     worksheetList.push(<WorksheetListItem key={i} worksheetID={worksheetID} isCurrentWorksheet={isCurrentWorksheet} onClick={onClick} />)
+  }
+  
+  if(worksheetList.length == 0){
+    worksheetList = "No worksheets open"
+    worksheetListStyle.justifyContent = "center"
+    worksheetListStyle.alignItems = "center"
+    worksheetListStyle.fontSize = "14px"
+    worksheetListStyle.color = "#A9A09E"
   }
   
   return (
@@ -857,7 +867,7 @@ function AddStudentButton(){
   return (
     <GenericPillButton useOnClick={true} isFilled={true} isShort={true} functionToTrigger={()=>{console.log("Add student")}} additionalStyleObject={{margin: "0 auto", paddingLeft: "30px", paddingRight: "30px"}} >
       <img src={constants.iconsFolderPath + "/add_white.svg"} alt="Add student" style={{ width: "12px", height: "12px", marginRight: "8px" }}/>
-      <p style={{margin: "0", padding: "0"}}>Add Students</p>
+      <p style={{margin: "0", padding: "0"}}>Add Student</p>
     </GenericPillButton>
   )
 }
@@ -865,6 +875,7 @@ function AddStudentButton(){
 function StudentSessionCardHeader({studentName, studentIDNumber, index}){
   const { allStudents } = useAllStudentsStore.getState();
   const { userIsMovingCurrentWorksheet, openStudents, currentWorksheet } = useSessionStateStore.getState()
+  const madisonModeActive = useUserSettingsStore( (state) => state.madisonMode )
   let student;
   if(studentIDNumber == "other"){
     student = { "name": "Other", "color": "none" }
@@ -876,7 +887,7 @@ function StudentSessionCardHeader({studentName, studentIDNumber, index}){
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: constants.redColor,
+    backgroundColor: madisonModeActive ? constants.purpleColor : constants.redColor,
     padding: "6px 10px",
     "--original-bg-color": constants.redColor,
     "--pulsate-bg-color": "#eb9286",

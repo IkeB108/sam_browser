@@ -46,10 +46,12 @@ function getGenericButtonStyle( primarySecondaryOrTertiary ){
   
 }
 
-export function GenericPillButton({ children, functionToTrigger, isFilled, isShort, additionalStyleObject, useOnClick}){
+export function GenericPillButton(props){
+  // { children, functionToTrigger, isFilled, isShort, additionalStyleObject, useOnClick}
+  
   //When useOnClick is true, return a regular button that uses onClick to trigger functionToTrigger.
   //If useOnClick is false or not provided, return a <PressDownButton> which triggers functionToTrigger on press down.
-  const verticalPadding = isShort ? "10px" : "14px"
+  const verticalPadding = props.isShort ? "10px" : "14px"
   const pillButtonStyle = {
     borderRadius: "200px",
     paddingTop: verticalPadding,
@@ -59,9 +61,9 @@ export function GenericPillButton({ children, functionToTrigger, isFilled, isSho
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    border:          isFilled ? "none"                  : "1px solid #3d3d3d",
-    backgroundColor: isFilled ? (constants.purpleColor) : "white",
-    color:           isFilled ? "white"                 : "#3d3d3d",
+    border:          props.isFilled ? "none"                  : "1px solid #3d3d3d",
+    backgroundColor: props.isFilled ? (constants.purpleColor) : "white",
+    color:           props.isFilled ? "white"                 : "#3d3d3d",
     fontFamily: "Roboto, sans-serif",
     fontWeight: 500,
     fontSize: "16px",
@@ -69,21 +71,28 @@ export function GenericPillButton({ children, functionToTrigger, isFilled, isSho
     userSelect: "none"
   }
   
-  if(additionalStyleObject){
-    Object.assign(pillButtonStyle, additionalStyleObject)
+  if(props.additionalStyleObject){
+    Object.assign(pillButtonStyle, props.additionalStyleObject)
   }
   
-  if(useOnClick){
+  const propsToPass = {...props}
+  delete propsToPass.functionToTrigger
+  delete propsToPass.isFilled
+  delete propsToPass.isShort
+  delete propsToPass.additionalStyleObject
+  delete propsToPass.useOnClick
+  
+  if(props.useOnClick){
     return (
-      <button style={pillButtonStyle} onClick={functionToTrigger}>
-        {children}
+      <button style={pillButtonStyle} onClick={props.functionToTrigger} {...propsToPass}>
+        {props.children}
       </button>
     )
   }
-  if(!useOnClick){
+  if(!props.useOnClick){
     return (
-      <PressDownButton style={pillButtonStyle} functionToTrigger={functionToTrigger}>
-        {children}
+      <PressDownButton style={pillButtonStyle} functionToTrigger={props.functionToTrigger} {...propsToPass}>
+        {props.children}
       </PressDownButton>
     )
   }

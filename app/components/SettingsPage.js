@@ -1,5 +1,5 @@
 import constants from '../constants.js'
-import { CloseButton } from "../constants.js"
+import { CloseButton, GenericPillButton } from "../constants.js"
 import React, { useRef, useState, useEffect } from "react"
 import { create } from 'zustand'
 import { useUserSettingsStore, worksheets } from '../page.js'
@@ -12,11 +12,13 @@ export function setStatusMessageOfWorksheetProcess(newValue){
 }
 
 function SettingsPage(){
+  const madisonModeActive = useUserSettingsStore( (state) => state.madisonMode )
   const settingsPageStyle = {
     width: "100%",
     height: "100%",
     boxSizing: "border-box",
-    padding: "16px"
+    padding: "16px",
+    backgroundColor: madisonModeActive ? "#ffc6f3" : "white"
   }
   
   const closeButtonAdditionalStyle = {
@@ -34,12 +36,27 @@ function SettingsPage(){
       <UploadWorksheetImageDataButton />
       <br />
       <RetrieveWorksheetImageDataButton />
-      <br /><br />
+      <br />
       <ClearWorksheetImageDataButton />
+      <br />
+      <MadisonModeButton />
       <br /><br />
       <StatusParagraph />
       
     </div>
+  )
+}
+
+function MadisonModeButton(){
+  const madisonModeActive = useUserSettingsStore( (state) => state.madisonMode )
+  const onClick = () => {
+    const newSetting = !(useUserSettingsStore.getState().madisonMode)
+    useUserSettingsStore.getState().setMadisonMode( newSetting )
+  }
+  return (
+    <GenericPillButton isFilled={false} functionToTrigger={onClick}>
+      Madison Mode: {madisonModeActive ? "ON" : "OFF"}
+    </GenericPillButton>
   )
 }
 
@@ -48,7 +65,8 @@ function UploadWorksheetImageDataButton(){
   const fileInputRef = React.useRef(null)
   const aWorksheetProcessIsBusy = useAWorksheetProcessIsBusyStore().aWorksheetProcessIsBusy
   const WorksheetImageDataButtonOnClick = () => {
-    if(!aWorksheetProcessIsBusy)fileInputRef.current.click()
+    const { tooBusy } = useAWorksheetProcessIsBusyStore.getState()
+    if(!tooBusy)fileInputRef.current.click()
   }
   const onFileInputChange = async function(e){
     if(e.target.files.length === 0){
@@ -61,17 +79,32 @@ function UploadWorksheetImageDataButton(){
     storeWorksheetsInIndexedDB()
   }
   
+  
   return (
     <div>
-      <button
-        style={UploadWorksheetImageDataButtonStyle}
-        onClick={WorksheetImageDataButtonOnClick}
+      <GenericPillButton
+        isFilled={false}
+        functionToTrigger={WorksheetImageDataButtonOnClick}
         disabled={aWorksheetProcessIsBusy}
-        className={"button-with-disabled-variant"}
-      >Upload Worksheet Image Data</button>
+        className="button-with-disabled-variant"
+      >
+        Upload Worksheet Image Data
+      </GenericPillButton>
       <input type="file" style={{display: "none"}} ref={fileInputRef} accept=".tar" onChange={onFileInputChange}/>
     </div>
   )
+  
+  // return (
+  //   <div>
+  //     <button
+  //       style={UploadWorksheetImageDataButtonStyle}
+  //       onClick={WorksheetImageDataButtonOnClick}
+  //       disabled={aWorksheetProcessIsBusy}
+  //       className={"button-with-disabled-variant"}
+  //     >Upload Worksheet Image Data</button>
+  //     <input type="file" style={{display: "none"}} ref={fileInputRef} accept=".tar" onChange={onFileInputChange}/>
+  //   </div>
+  // )
 }
 
 async function getUntarredFiles(tarFile){
@@ -155,7 +188,9 @@ function updateLocalizationPropertyOfAllWorksheets(){
       }
     }
     //While we're here, also update pageCount property
-    worksheets[worksheetID].pageCount = Object.keys(worksheets[worksheetID].pageBlobs).length
+    if(!["keys", "integerMap"].includes(worksheetID)){
+      worksheets[worksheetID].pageCount = Object.keys(worksheets[worksheetID].pageBlobs).length
+    }
   }
 }
 
@@ -181,20 +216,33 @@ function RetrieveWorksheetImageDataButton(){
   const RetrieveWorksheetImageDataButtonStyle = constants.getGenericButtonStyle("primary")
   const aWorksheetProcessIsBusy = useAWorksheetProcessIsBusyStore().aWorksheetProcessIsBusy
   const onClick = function(){
-    if(!aWorksheetProcessIsBusy){
+    const tooBusy = useAWorksheetProcessIsBusyStore.getState().aWorksheetProcessIsBusy
+    if(!tooBusy){
       retrieveWorksheetsFromIndexedDB( true )
     }
   }
+  
   return (
-    <button 
-      style={RetrieveWorksheetImageDataButtonStyle} 
-      onClick={onClick} 
+    <GenericPillButton
+      isFilled={false}
+      functionToTrigger={onClick}
       disabled={aWorksheetProcessIsBusy}
-      className={"button-with-disabled-variant"}
+      className="button-with-disabled-variant"
     >
       Retrieve Worksheet Image Data
-    </button>
+    </GenericPillButton>
   )
+  
+  // return (
+  //   <button 
+  //     style={RetrieveWorksheetImageDataButtonStyle} 
+  //     onClick={onClick} 
+  //     disabled={aWorksheetProcessIsBusy}
+  //     className={"button-with-disabled-variant"}
+  //   >
+  //     Retrieve Worksheet Image Data
+  //   </button>
+  // )
 }
 
 function retrieveWorksheetsFromIndexedDB( isCalledFromSettingsPage ){
@@ -256,21 +304,34 @@ function ClearWorksheetImageDataButton(){
   const ClearWorksheetImageDataButtonStyle = constants.getGenericButtonStyle("primary")
   const aWorksheetProcessIsBusy = useAWorksheetProcessIsBusyStore().aWorksheetProcessIsBusy
   const onClick = function(){
-    if(!aWorksheetProcessIsBusy){
+    const tooBusy = useAWorksheetProcessIsBusyStore.getState().aWorksheetProcessIsBusy
+    if(!tooBusy){
       clearWorksheetsInIndexedDB();
       setStatusMessageOfWorksheetProcess("Worksheet image data cleared.")
     }
   }
+  
   return (
-    <button 
-      style={ClearWorksheetImageDataButtonStyle} 
-      onClick={onClick} 
+    <GenericPillButton
+      isFilled={false}
+      functionToTrigger={onClick}
       disabled={aWorksheetProcessIsBusy}
-      className={"button-with-disabled-variant"}
+      className="button-with-disabled-variant"
     >
       Clear Worksheet Image Data
-    </button>
+    </GenericPillButton>
   )
+  
+  // return (
+  //   <button 
+  //     style={ClearWorksheetImageDataButtonStyle} 
+  //     onClick={onClick} 
+  //     disabled={aWorksheetProcessIsBusy}
+  //     className={"button-with-disabled-variant"}
+  //   >
+  //     Clear Worksheet Image Data
+  //   </button>
+  // )
 }
 
 function clearWorksheetsInIndexedDB(){

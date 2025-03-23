@@ -190,6 +190,8 @@ const useUserSettingsStore = create( (set)=> ({
   //settings go here
   pageView: "double", //single or double
   setPageView: (newValue)=>{ set( ()=>({ pageView: newValue }) ) },
+  madisonMode: false,
+  setMadisonMode: (newValue)=>{ set( ()=>({ madisonMode: newValue }) ) }
 }))
 
 export function calcUserHasPinchZoomed(){
