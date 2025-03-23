@@ -65,8 +65,14 @@ function UploadWorksheetImageDataButton(){
   const fileInputRef = React.useRef(null)
   const aWorksheetProcessIsBusy = useAWorksheetProcessIsBusyStore().aWorksheetProcessIsBusy
   const WorksheetImageDataButtonOnClick = () => {
-    const { tooBusy } = useAWorksheetProcessIsBusyStore.getState()
-    if(!tooBusy)fileInputRef.current.click()
+    const tooBusy = useAWorksheetProcessIsBusyStore.getState().aWorksheetProcessIsBusy
+    if(!tooBusy){
+      try {
+        fileInputRef.current.click()
+      } catch (error) {
+        alert(error)
+      }
+    }
   }
   const onFileInputChange = async function(e){
     if(e.target.files.length === 0){
@@ -87,6 +93,7 @@ function UploadWorksheetImageDataButton(){
         functionToTrigger={WorksheetImageDataButtonOnClick}
         disabled={aWorksheetProcessIsBusy}
         className="button-with-disabled-variant"
+        useOnClick={true}
       >
         Upload Worksheet Image Data
       </GenericPillButton>
