@@ -2,28 +2,136 @@ import constants from "../constants.js"
 import { create } from "zustand"
 import { CloseButton, GenericPillButton } from "../constants.js"
 import { useAllStudentsStore, useSessionStateStore, useUserSettingsStore, worksheets } from "../page.js"
-import { useStatusMessageStore, useAWorksheetProcessIsBusyStore, useAddWorksheetModalIsOpenStore } from "../stores.js"
+import { useStatusMessageStore, useAWorksheetProcessIsBusyStore, useAddWorksheetModalIsOpenStore, useUserHasPinchZoomedStore } from "../stores.js"
 import { AddWorksheetModal } from "./AddWorksheetModal.js"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
 const pagesAreHiddenStore = create( (set) => ({
   pagesAreHidden: false,
   setPagesAreHidden: (pagesAreHidden) => set({ pagesAreHidden })
 }) )
 
+const usePageDraggingStore = create( (set) => ({
+  userIsDraggingPages: false,
+  touchStartX: null,
+  currentPageOnTouchStart: null
+}))
+
+const dragToChangeCurrentPageIsAllowed = function(){
+  const { userHasPinchZoomed } = useUserHasPinchZoomedStore.getState()
+  const { pagesAreHidden } = pagesAreHiddenStore.getState()
+  const { currentWorksheet } = useSessionStateStore.getState()
+  return !userHasPinchZoomed && !pagesAreHidden && (currentWorksheet.worksheetIndex != null)
+}
+
+function onKeyDownInWorksheetViewer(event){
+  const { allowArrowKeysForPageNavigation } = useSessionStateStore.getState()
+  if(allowArrowKeysForPageNavigation){
+    if(event.key == "ArrowLeft"){
+      changePage("prev")
+    }
+    if(event.key == "ArrowRight"){
+      changePage("next")
+    }
+  }
+  
+}
+
+function onPageContainerPointerDown(event){
+  const pageChangeAllowed = dragToChangeCurrentPageIsAllowed()
+  if(!pageChangeAllowed) return;
+  if(pageChangeAllowed){
+    event.preventDefault()
+  }
+  
+  const eventX = event.touches ? event.touches[0].clientX : event.clientX
+  usePageDraggingStore.setState({
+    userIsDraggingPages: true,
+    currentPageOnTouchStart: useSessionStateStore.getState().currentPageOfWorksheet,
+    touchStartX: eventX
+  })
+  
+}
+
+function onDocumentPointerMove(event){
+  const dragDistanceOfOneIncrement = 60 //px
+  const { userIsDraggingPages, touchStartX, currentPageOnTouchStart } = usePageDraggingStore.getState()
+  if(!userIsDraggingPages) return;
+  
+  const { setCurrentPageOfWorksheet, getCurrentWorksheetID } = useSessionStateStore.getState()
+  event.preventDefault()
+  const eventX = event.touches ? event.touches[0].clientX : event.clientX
+  const touchEndX = eventX
+  const diff = touchEndX - touchStartX
+  let increment = Math.round( diff / dragDistanceOfOneIncrement ) * -1 //Negative because controls are flipped to simulate panning
+  
+  //Attempt to increment page number by increment
+  const { pageView } = useUserSettingsStore.getState()
+  if(pageView == "double"){
+    increment *= 2
+  }
+  let newPage = currentPageOnTouchStart + increment
+  let minPage = (pageView == "single") ? 1 : 0
+  let maxPage = worksheets[ getCurrentWorksheetID() ].pageCount
+  
+  
+  if(pageView == "double"){
+    if(maxPage % 2 == 1) maxPage -= 1 //In double view, if the pagecount is an odd number, set max page to one less than the page count
+  }
+  if(newPage < minPage) newPage = minPage
+  if(newPage > maxPage) newPage = maxPage
+  
+  //Update currentPageOfWorksheet to newPage, but only if it's changed
+  const { currentPageOfWorksheet } = useSessionStateStore.getState()
+  if(newPage !== currentPageOfWorksheet){
+    setCurrentPageOfWorksheet( newPage )
+  }
+}
+
+function onDocumentPointerUp(event){
+  const { userIsDraggingPages } = usePageDraggingStore.getState()
+  if(userIsDraggingPages){
+    event.preventDefault()
+    usePageDraggingStore.setState({
+      userIsDraggingPages: false,
+      currentPageOnTouchStart: null,
+      touchStartX: null
+    })
+  }
+}
+
 function WorksheetViewer(){
   useEffect( ()=> {
+    //for debugging in console
     window.useAddWorksheetModalIsOpenStore = useAddWorksheetModalIsOpenStore
+    window.usePageDraggingStore = usePageDraggingStore
+    //Add keydown listener for left and right arrowkeys
+    document.addEventListener("keydown", onKeyDownInWorksheetViewer)
+    //Add touchmove event listeners
+    document.addEventListener("pointermove", onDocumentPointerMove)
+    //Add touchend event listeners
+    document.addEventListener("pointerup", onDocumentPointerUp)
+    
+    return () => {
+      //Remove keydown listener for left and right arrowkeys
+      document.removeEventListener("keydown", onKeyDownInWorksheetViewer)
+      //Remove touchmove event listeners
+      document.removeEventListener("pointermove", onDocumentPointerMove)
+      //Remove touchend event listeners
+      document.removeEventListener("pointerup", onDocumentPointerUp)
+    }
   }, [])
   const { addWorksheetModalIsOpen } = useAddWorksheetModalIsOpenStore()
+  const userIsDraggingPages = usePageDraggingStore( (state) => state.userIsDraggingPages )
   const worksheetViewerStyle = {
     width: "100%",
     height: "100%",
     // backgroundColor: userHasPinchZoomed ? "green": "red",
     display: "flex",
     flexShrink: 0,
-    containerType: "size"
+    containerType: "size",
+    cursor: userIsDraggingPages ? "ew-resize" : "default"
   }
   
   
@@ -39,6 +147,7 @@ function WorksheetViewer(){
 }
 
 function PagePanel(){
+  
   const pagePanelStyle = {
     flexGrow: 1,
     flexBasis: "0%",
@@ -64,7 +173,7 @@ function PagePanel(){
     height: "100%",
     containerType: "size",
     boxSizing: "border-box",
-    display: "flex"
+    display: "flex",
   }
   
   /*
@@ -162,6 +271,26 @@ function PagePanel(){
   )
 }
 
+function changePage( prevOrNext ){
+  const { currentPageOfWorksheet, setCurrentPageOfWorksheet, getCurrentWorksheetID } = useSessionStateStore.getState()
+  if(getCurrentWorksheetID() == null) return;
+  
+  const { pageView } = useUserSettingsStore.getState()
+  const pagesToAdvance = (pageView == "single") ? 1 : 2
+  let currentWorksheet = getCurrentWorksheetID()
+  let newPage = currentPageOfWorksheet
+  if(prevOrNext == "prev") newPage -= pagesToAdvance
+  if(prevOrNext == "next") newPage += pagesToAdvance
+  let minPage = (pageView == "single") ? 1 : 0
+  let maxPage = worksheets[currentWorksheet].pageCount
+  if(pageView == "double"){
+    if(maxPage % 2 == 1) maxPage -= 1 //In double view, if the pagecount is an odd number, set max page to one less than the page count
+  }
+  if(newPage < minPage) newPage = minPage
+  if(newPage > maxPage) newPage = maxPage
+  setCurrentPageOfWorksheet( newPage )
+}
+
 function PagePanelFooter(){
   const pagePanelFooterStyle = {
     paddingTop: "16px",
@@ -192,7 +321,7 @@ function PagePanelFooter(){
     isFilled={true}
     isShort={true}
     additionalStyleObject={{paddingLeft: "min(1.5vw, 24px)", paddingRight: "min(1.5vw, 24px)", minWidth: "45px"}}
-    onClickFunction={ togglePageView }>
+    functionToTrigger={ togglePageView }>
       <img src={togglePageViewIconPath} alt="Toggle Page View"/>
   </GenericPillButton>
   
@@ -201,7 +330,8 @@ function PagePanelFooter(){
     isFilled={false}
     isShort={true}
     additionalStyleObject={{paddingLeft: "min(1.5vw, 24px)", paddingRight: "min(1.5vw, 24px)"}}
-    onClickFunction={ onMoveWorksheetClick }>
+    functionToTrigger={ onMoveWorksheetClick }
+    useOnClick={true}>
       <p style={{margin: "0", padding: "0", marginRight: "10px", fontSize: "min(1.6vw, 16px)", textWrap: "nowrap"}}>Move</p>
       <img src={constants.iconsFolderPath + "/move.svg"} alt="Move" style={{ width: "19px", height: "15px" }}/>
   </GenericPillButton>
@@ -217,7 +347,7 @@ function PagePanelFooter(){
         zIndex: "2" //Ensures that the button is clickable when it goes outside the bounds of its parent
       }
     }
-    onClickFunction={ ()=>{console.log("log worksheet button clicked")} }>
+    functionToTrigger={ ()=>{console.log("log worksheet button clicked")} }>
       <p style={{margin: "0", padding: "0", marginRight: "14px", fontSize: "min(1.6vw, 16px)", textWrap: "nowrap"}}>Log worksheet</p>
       <img src={constants.iconsFolderPath + "/arrow_up.svg"} alt="Expand" style={{ width: "14px", height: "7px" }}/>
   </GenericPillButton>
@@ -232,7 +362,7 @@ function PagePanelFooter(){
     isFilled={true}
     isShort={true}
     additionalStyleObject={{paddingLeft: "min(2vw, 30px)", paddingRight: "min(2vw, 30px)"}}
-    onClickFunction={ togglePageVisibility }>
+    functionToTrigger={ togglePageVisibility }>
       {
         pagesAreHidden ?
           <img id="toggle-hidden" src={constants.iconsFolderPath + "/hidden.svg"} alt="Toggle visibility" /> :
@@ -240,25 +370,6 @@ function PagePanelFooter(){
       }
   </GenericPillButton>
   
-  const changePage = function( prevOrNext ){
-    const { currentPageOfWorksheet, setCurrentPageOfWorksheet, getCurrentWorksheetID } = useSessionStateStore.getState()
-    if(getCurrentWorksheetID() == null) return;
-    
-    const { pageView } = useUserSettingsStore.getState()
-    const pagesToAdvance = (pageView == "single") ? 1 : 2
-    let currentWorksheet = getCurrentWorksheetID()
-    let newPage = currentPageOfWorksheet
-    if(prevOrNext == "prev") newPage -= pagesToAdvance
-    if(prevOrNext == "next") newPage += pagesToAdvance
-    let minPage = (pageView == "single") ? 1 : 0
-    let maxPage = worksheets[currentWorksheet].pageCount
-    if(pageView == "double"){
-      if(maxPage % 2 == 1) maxPage -= 1 //In double view, if the pagecount is an odd number, set max page to one less than the page count
-    }
-    if(newPage < minPage) newPage = minPage
-    if(newPage > maxPage) newPage = maxPage
-    setCurrentPageOfWorksheet( newPage )
-  }
   const prevPageButton =
   <GenericPillButton
     isFilled={false}
@@ -270,7 +381,7 @@ function PagePanelFooter(){
         zIndex: "2" //Ensures that the button is clickable when it goes outside the bounds of its parent
       }
     }
-    onClickFunction={  ()=>{ changePage("prev") } }>
+    functionToTrigger={  ()=>{ changePage("prev") } }>
       <img src={constants.iconsFolderPath + "/arrow_left.svg"} alt="Previous Page" style={{width: "15px", height: "20px"}} />
   </GenericPillButton>
   
@@ -285,7 +396,7 @@ function PagePanelFooter(){
         zIndex: "2" //Ensures that the button is clickable when it goes outside the bounds of its parent
       }   
     }
-    onClickFunction={  ()=>{ changePage("next") } }>
+    functionToTrigger={  ()=>{ changePage("next") } }>
       <img src={constants.iconsFolderPath + "/arrow_right.svg"} alt="Next Page" style={{width: "15px", height: "20px"}} />
   </GenericPillButton>
   
@@ -310,12 +421,32 @@ function PagePanelFooter(){
 }
 
 function PageContainer( {isLeftOrRight} ){
+  const pageContainerRef = useRef(null)
+  useEffect( ()=> {
+    pageContainerRef.current.addEventListener("pointerdown", onPageContainerPointerDown)
+    return () => {
+      if(pageContainerRef.current){
+        //If pageContainerRef.current is not null
+        pageContainerRef.current.removeEventListener("pointerdown", onPageContainerPointerDown)
+      }
+    }
+  }, [])
+  
+  //Decide whether dragging to change page is allowed to determine cursor style
+  //We won't use dragToChangeCurrentPageIsAllowed because we need all the hooks to be in the body of the component
+  const userHasPinchZoomed = useUserHasPinchZoomedStore( (state) => state.userHasPinchZoomed )
+  const pagesAreHidden = pagesAreHiddenStore( (state) => state.pagesAreHidden )
+  const currentWorksheet = useSessionStateStore( (state) => state.currentWorksheet )
+  const allowDragPages = !userHasPinchZoomed && !pagesAreHidden && (currentWorksheet.worksheetIndex != null)
+  
   const pageContainerStyle = {
     position: "absolute",
     inset: 0,
     marginLeft: "auto",
     maxHeight: "100%",
     aspectRatio: "496 / 702",
+    cursor: allowDragPages ? "ew-resize" : "default",
+    userSelect: "none"
   }
   // This container will be the exact same size as the page image
   const { currentPageOfWorksheet, getCurrentWorksheetID } = useSessionStateStore()
@@ -334,7 +465,7 @@ function PageContainer( {isLeftOrRight} ){
     } 
   }
   return (
-    <div style={pageContainerStyle}>
+    <div style={pageContainerStyle} ref={pageContainerRef}>
         {/* <PageImage imageSrc="placeholderWorksheetPage.webp" /> */}
         <PageImage pageImageBlob={pageImageBlob} />
         {/* <ChangePageButton isLeftOrRight={isLeftOrRight} /> */}
@@ -376,7 +507,7 @@ function PageImage({ pageImageBlob }){
     justifyContent: "center",
     alignItems: "center",
     flexDirection: "column",
-    boxSizing: "border-box"
+    boxSizing: "border-box",
   }
   const { pagesAreHidden } = pagesAreHiddenStore()
   const hasNoPage = (pageImageBlob === null) || pagesAreHidden
@@ -396,7 +527,12 @@ function PageImage({ pageImageBlob }){
   }
   const fileURL = URL.createObjectURL(pageImageBlob)
   return (
-    <img src={fileURL} style={pageImageStyle} />
+    <img
+      src={fileURL}
+      style={pageImageStyle} 
+      draggable={false} 
+      onDragStart={(e) => e.preventDefault()}
+    />
   )
 }
 
@@ -427,7 +563,7 @@ function WorksheetSelectionPanel(){
       <div style={worksheetSelectionPanelStyle}>
         {
           openStudents.map( (studentData, index) => {
-            return <StudentSessionCard key={studentData.studentIDNumber} studentIDNumber={studentData.studentIDNumber} />
+            return <StudentSessionCard index={index} key={studentData.studentIDNumber} studentIDNumber={studentData.studentIDNumber} />
           } )
         }
         <AddStudentButton />
@@ -457,7 +593,7 @@ function WorksheetSelectionPanelFooter(){
     isFilled={false}
     isShort={true}
     additionalStyleObject={{paddingLeft: "min(1.5vw, 24px)", paddingRight: "min(1.5vw, 24px)"}}
-    onClickFunction={ ()=>{console.log("view log button clicked")} }>
+    functionToTrigger={ ()=>{console.log("view log button clicked")} }>
       <p style={{margin: "0", padding: "0", fontSize: "min(1.6vw, 16px)", textWrap: "nowrap"}}>View log</p>
   </GenericPillButton>
   
@@ -466,7 +602,7 @@ function WorksheetSelectionPanelFooter(){
     isFilled={false}
     isShort={true}
     additionalStyleObject={{paddingLeft: "min(1.5vw, 30px)", paddingRight: "min(1.5vw, 30px)"}}
-    onClickFunction={ ()=>{ useSessionStateStore.getState().setCurrentPage("SettingsPage") } }>
+    functionToTrigger={ ()=>{ useSessionStateStore.getState().setCurrentPage("SettingsPage") } }>
       <img src={constants.iconsFolderPath + "/settings.svg"} alt="Settings" style={{ width: "23px", height: "23px" }}/>
   </GenericPillButton>
   
@@ -478,7 +614,7 @@ function WorksheetSelectionPanelFooter(){
   )
 }
 
-function StudentSessionCard({studentIDNumber}){
+function StudentSessionCard({studentIDNumber, index}){
   const { allStudents } = useAllStudentsStore.getState();
   let student;
   if(studentIDNumber == "other"){
@@ -504,9 +640,9 @@ function StudentSessionCard({studentIDNumber}){
   
   return (
     <div style={studentSessionCardStyle}>
-      <StudentSessionCardHeader studentName={student.name} studentIDNumber={studentIDNumber} />
+      <StudentSessionCardHeader index={index} studentName={student.name} studentIDNumber={studentIDNumber} />
       <StudentSessionCardWorksheetList studentIDNumber={studentIDNumber} />
-      <StudentSessionCardFooter studentIDNumber={studentIDNumber} />
+      <StudentSessionCardFooter studentIDNumber={studentIDNumber} index={index} />
     </div>
   )
 }
@@ -558,7 +694,7 @@ function StudentSessionCardWorksheetList({ studentIDNumber }){
       setCurrentPageOfWorksheet(newCurrentPage)
     }
     
-    worksheetList.push(<WorksheetListItem key={worksheetID} worksheetID={worksheetID} isCurrentWorksheet={isCurrentWorksheet} onClick={onClick} />)
+    worksheetList.push(<WorksheetListItem key={i} worksheetID={worksheetID} isCurrentWorksheet={isCurrentWorksheet} onClick={onClick} />)
   }
   
   return (
@@ -595,7 +731,9 @@ function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
     // textWrap: "balance"
   }
   
-  const worksheetID_without_WS = worksheetID.slice(0, -3)
+  //Remove "WS" or " WS" from the end of the worksheetID for display
+  //to conserve space
+  const worksheetID_without_WS = worksheetID.replace(/( WS|WS)$/, "");
   
   if(isCurrentWorksheet){
     worksheetListItemStyle.backgroundColor = "#55587B26"
@@ -628,29 +766,29 @@ function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
 }
 
 
-function MoveWorksheetButton(){
-  const moveWorksheetButtonStyle = {
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    width: "24px",
-    height: "24px",
-    padding: "0px",
-    verticalAlign: "middle",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    margin: "0px 16px",
-    boxSizing: "border-box",
-    flexShrink: 0
-  }
-  return (
-    <button style={moveWorksheetButtonStyle} onClick={ onMoveWorksheetClick }>
-      <img src={`${constants.iconsFolderPath}/move.svg`} alt="Move Worksheet" style={{ width: "20px", height: "16px" }} />
-    </button>
-  )
+// function MoveWorksheetButton(){
+//   const moveWorksheetButtonStyle = {
+//     background: "none",
+//     border: "none",
+//     cursor: "pointer",
+//     width: "24px",
+//     height: "24px",
+//     padding: "0px",
+//     verticalAlign: "middle",
+//     display: "flex",
+//     alignItems: "center",
+//     justifyContent: "center",
+//     margin: "0px 16px",
+//     boxSizing: "border-box",
+//     flexShrink: 0
+//   }
+//   return (
+//     <button style={moveWorksheetButtonStyle} onClick={ onMoveWorksheetClick }>
+//       <img src={`${constants.iconsFolderPath}/move.svg`} alt="Move Worksheet" style={{ width: "20px", height: "16px" }} />
+//     </button>
+//   )
   
-}
+// }
 
 function onMoveWorksheetClick(){
   //Toggle whether user is moving a worksheet
@@ -663,7 +801,7 @@ function onMoveWorksheetClick(){
   setUserIsMovingCurrentWorksheet( !userIsMovingCurrentWorksheet )
 }
 
-function StudentSessionCardFooter({ studentIDNumber }){
+function StudentSessionCardFooter({ studentIDNumber, index }){
   const footerStyle = {
     backgroundColor: "none",
     padding: "14px 14px",
@@ -689,7 +827,7 @@ function StudentSessionCardFooter({ studentIDNumber }){
   return (
     <div style={footerStyle}>
       <TimerStartButton styleObject={circularButtonStyle} studentIDNumber={studentIDNumber} />
-      <AddWorksheetButton styleObject={circularButtonStyle} studentIDNumber={studentIDNumber} />
+      <AddWorksheetButton styleObject={circularButtonStyle} studentIDNumber={studentIDNumber} index={index} />
     </div>
   )
 }
@@ -702,10 +840,11 @@ function TimerStartButton({ studentIDNumber, styleObject }){
   )
 }
 
-function AddWorksheetButton({ studentIDNumber, styleObject }){
+function AddWorksheetButton({ studentIDNumber, styleObject, index }){
   const onClick = function(){
     useAddWorksheetModalIsOpenStore.getState().setAddWorksheetModalIsOpen(true)
     useAddWorksheetModalIsOpenStore.getState().setStudentAddingFor(studentIDNumber)
+    useAddWorksheetModalIsOpenStore.getState().setIndexOfStudentAddingFor(index)
   }
   return (
     <button style={styleObject} onClick={onClick}>
@@ -716,14 +855,14 @@ function AddWorksheetButton({ studentIDNumber, styleObject }){
 
 function AddStudentButton(){
   return (
-    <GenericPillButton isFilled={true} isShort={true} onClickFunction={()=>{console.log("Add student")}} additionalStyleObject={{margin: "0 auto", paddingLeft: "30px", paddingRight: "30px"}} >
+    <GenericPillButton useOnClick={true} isFilled={true} isShort={true} functionToTrigger={()=>{console.log("Add student")}} additionalStyleObject={{margin: "0 auto", paddingLeft: "30px", paddingRight: "30px"}} >
       <img src={constants.iconsFolderPath + "/add_white.svg"} alt="Add student" style={{ width: "12px", height: "12px", marginRight: "8px" }}/>
       <p style={{margin: "0", padding: "0"}}>Add Students</p>
     </GenericPillButton>
   )
 }
 
-function StudentSessionCardHeader({studentName, studentIDNumber}){
+function StudentSessionCardHeader({studentName, studentIDNumber, index}){
   const { allStudents } = useAllStudentsStore.getState();
   const { userIsMovingCurrentWorksheet, openStudents, currentWorksheet } = useSessionStateStore.getState()
   let student;
@@ -741,7 +880,10 @@ function StudentSessionCardHeader({studentName, studentIDNumber}){
     padding: "6px 10px",
     "--original-bg-color": constants.redColor,
     "--pulsate-bg-color": "#eb9286",
-    cursor: userIsMovingCurrentWorksheet ? "pointer" : "default",
+  }
+  
+  if(userIsMovingCurrentWorksheet){
+    headerStyle.cursor = "pointer"
   }
 
   let nameStyle = {

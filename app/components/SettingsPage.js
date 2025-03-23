@@ -221,10 +221,33 @@ function retrieveWorksheetsFromIndexedDB( isCalledFromSettingsPage ){
         }
       }
       Object.assign(worksheets, event.data.content)
+      worksheets.keys = Object.keys(worksheets) //Set keys property of worksheets at the start so it doesn't have to be constantly recalcualted
       window.worksheets = worksheets
+      worksheets.integerMap = mapWorksheetIDsToIntegers()
       useAWorksheetProcessIsBusyStore.getState().updateValue(false)
     }
   }
+}
+
+function mapWorksheetIDsToIntegers(){
+  const worksheetIDs = Object.keys(worksheets)
+  const worksheetIDToIntegerMap = {}
+  for(let i = 0; i < worksheetIDs.length; i++){
+    if(worksheetIDs[i] == "keys") continue;
+    const splitID = worksheetIDs[i].split(" ")
+    let integerString = ""
+    for(let j = 0; j < splitID.length; j ++){
+      if(splitID[j].includes(".") || splitID[j].includes("-")){
+        integerString += splitID[j].replace(/[^0-9ABC]/g, "");
+      }
+    }
+    if(worksheetIDToIntegerMap.hasOwnProperty(integerString)){
+      worksheetIDToIntegerMap[integerString].push( worksheetIDs[i] )
+    } else {
+      worksheetIDToIntegerMap[integerString] = [ worksheetIDs[i] ]
+    }
+  }
+  return worksheetIDToIntegerMap
 }
 
 export { retrieveWorksheetsFromIndexedDB }

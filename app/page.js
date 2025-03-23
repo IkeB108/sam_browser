@@ -124,13 +124,36 @@ const useSessionStateStore = create( (set)=> ({
       {id: "(OLD) 03.06-12 TP (USA) 1-1 WS", pageLeftOff: 0}
     ], "studentIDNumber": "1"},
     {"openWorksheets": [], "studentIDNumber": "2"},
+    {"openWorksheets": [], "studentIDNumber": "3"},
     {"openWorksheets": [], "studentIDNumber": "other"}
     // {"openWorksheets": [], "studentIDNumber": "3"}
   ],
   setOpenStudents: (newValue)=>{ set( ()=>({ openStudents: newValue }) ) },
   deleteOpenStudent: (studentIDNumber)=>{
+    /*
+    When deleting a student, we need to update the openStudentIndex of the currentWorksheet
+    because the openStudents array will be shorter after the student is deleted.
+    To do this, we'll grab the student ID number of the student at openStudentIndex
+    and then use the student ID number to reset the openStudentIndex after deleting this student.
+    This works because there will never be two StudentSessionCards with the same student ID number.
+    */
+    
+    //Get the id number of the student at openStudentIndex
+    const { currentWorksheet } = useSessionStateStore.getState()
+    const studentIDNumberOfOpenStudent = useSessionStateStore.getState().openStudents[currentWorksheet.openStudentIndex].studentIDNumber
+    console.log({ studentIDNumberOfOpenStudent })
     let newOpenStudents = useSessionStateStore.getState().openStudents.filter( (student)=> student.studentIDNumber !== studentIDNumber )
     set( ()=>({ openStudents: newOpenStudents }) )
+    
+    //Use the id number to redefine the openStudentIndex
+    const newOpenStudentIndex = newOpenStudents.findIndex( (student)=> student.studentIDNumber === studentIDNumberOfOpenStudent )
+    //If newOpenStudentIndex is -1, that means that we just deleted the student at openStudentIndex
+    //So we need to set openStudentIndex to null
+    if(newOpenStudentIndex === -1){
+      set( ()=>({ currentWorksheet: { openStudentIndex: null, worksheetIndex: null } }) )
+    } else {
+      set( ()=>({ currentWorksheet: { openStudentIndex: newOpenStudentIndex, worksheetIndex: currentWorksheet.worksheetIndex } }) )
+    }
   },
   addOpenStudentToBottom: (studentIDNumber)=>{
     let newOpenStudents = useSessionStateStore.getState().openStudents.concat({"openWorksheets": [], "studentIDNumber": studentIDNumber})
@@ -159,6 +182,8 @@ const useSessionStateStore = create( (set)=> ({
       set({ openStudents: [...openStudents] })
     }
   },
+  allowArrowKeysForPageNavigation: true,
+  setAllowArrowKeysForPageNavigation: (newValue)=>{ set( ()=>({ allowArrowKeysForPageNavigation: newValue }) ) },
 }))
 
 const useUserSettingsStore = create( (set)=> ({

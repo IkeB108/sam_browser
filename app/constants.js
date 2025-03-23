@@ -46,7 +46,9 @@ function getGenericButtonStyle( primarySecondaryOrTertiary ){
   
 }
 
-export function GenericPillButton({ children, onClickFunction, isFilled, isShort, additionalStyleObject}){
+export function GenericPillButton({ children, functionToTrigger, isFilled, isShort, additionalStyleObject, useOnClick}){
+  //When useOnClick is true, return a regular button that uses onClick to trigger functionToTrigger.
+  //If useOnClick is false or not provided, return a <PressDownButton> which triggers functionToTrigger on press down.
   const verticalPadding = isShort ? "10px" : "14px"
   const pillButtonStyle = {
     borderRadius: "200px",
@@ -63,17 +65,28 @@ export function GenericPillButton({ children, onClickFunction, isFilled, isShort
     fontFamily: "Roboto, sans-serif",
     fontWeight: 500,
     fontSize: "16px",
-    cursor: "pointer"
+    cursor: "pointer",
+    userSelect: "none"
   }
   
   if(additionalStyleObject){
     Object.assign(pillButtonStyle, additionalStyleObject)
   }
-  return (
-    <button style={pillButtonStyle} onClick={onClickFunction}>
-      {children}
-    </button>
-  )
+  
+  if(useOnClick){
+    return (
+      <button style={pillButtonStyle} onClick={functionToTrigger}>
+        {children}
+      </button>
+    )
+  }
+  if(!useOnClick){
+    return (
+      <PressDownButton style={pillButtonStyle} functionToTrigger={functionToTrigger}>
+        {children}
+      </PressDownButton>
+    )
+  }
 }
 
 
@@ -131,7 +144,7 @@ export function CloseButton({ buttonWidthString, iconWidthString, color, onClick
   )
 }
 
-export function GenericModal({widthSetting, heightSetting, children, additionalStyleObject, blockBehind}){
+export function GenericModal({refSetting, widthSetting, heightSetting, children, additionalStyleObject, blockBehind}){
   //blockBehind = boolean: whether to disable interactivity of everything behind modal
   
   const modalStyle = {
@@ -154,7 +167,7 @@ export function GenericModal({widthSetting, heightSetting, children, additionalS
   }
   if(!blockBehind){
     return (
-      <div style={modalStyle}>
+      <div ref={ refSetting ? refSetting : null } style={modalStyle}>
         {children}
       </div>
     )
@@ -162,7 +175,7 @@ export function GenericModal({widthSetting, heightSetting, children, additionalS
   if(blockBehind){
     return (
       <div style={{position: "fixed", top: "0", left: "0", width: "100%", height: "100%", backgroundColor: "#00000055", zIndex: "3"}}>
-        <div style={modalStyle}>
+        <div ref={ refSetting ? refSetting : null } style={modalStyle}>
           {children}
         </div>
       </div>
