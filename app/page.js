@@ -7,6 +7,7 @@ import SettingsPage from './components/SettingsPage.js'
 import { retrieveWorksheetsFromIndexedDB, setStatusMessageOfWorksheetProcess } from "./components/SettingsPage.js"
 import { useUserHasPinchZoomedStore } from "./stores.js"
 import constants from "./constants.js"
+
 //Keys in allPages use PascalCasing to match the react component names
 const allPages = {
   "WorksheetViewer": <WorksheetViewer />,
@@ -139,11 +140,17 @@ const useSessionStateStore = create( (set)=> ({
     */
     
     //Get the id number of the student at openStudentIndex
-    const { currentWorksheet } = useSessionStateStore.getState()
-    const studentIDNumberOfOpenStudent = useSessionStateStore.getState().openStudents[currentWorksheet.openStudentIndex].studentIDNumber
-    console.log({ studentIDNumberOfOpenStudent })
+    const { currentWorksheet, openStudents } = useSessionStateStore.getState()
+    let studentIDNumberOfOpenStudent = null //Set to null if no worksheet is open
+    if(currentWorksheet.openStudentIndex !== null){
+      studentIDNumberOfOpenStudent = openStudents[currentWorksheet.openStudentIndex].studentIDNumber
+    }
+    
+    //Delete the student
     let newOpenStudents = useSessionStateStore.getState().openStudents.filter( (student)=> student.studentIDNumber !== studentIDNumber )
     set( ()=>({ openStudents: newOpenStudents }) )
+    
+    if(studentIDNumberOfOpenStudent == null)return; //If no worksheet was open, don't do anything else
     
     //Use the id number to redefine the openStudentIndex
     const newOpenStudentIndex = newOpenStudents.findIndex( (student)=> student.studentIDNumber === studentIDNumberOfOpenStudent )
@@ -228,6 +235,32 @@ function HomePage() {
     document.addEventListener("touchend", onDocumentTouchEndOrMouseUp)
     document.addEventListener("mouseup", onDocumentTouchEndOrMouseUp)
     updateUserHasPinchZoomedOnResize()
+    
+    if(window.location.href.includes("?eruda=true")){
+      /*
+      Eruda is a module for adding virtual devtools to a webpage for mobile debugging.
+      Eruda expects to be run in-browser, so it needs to be imported dynamically
+      from within a component like HomePage with useEffect. It's not enough to
+      just import it at the top of a file that says 'use client'.
+      The reason that we're importing this differently from how Eruda recommends
+      in docs is because Eruda doesn't necessarily expect to be used in a
+      React/Nextjs app.
+      
+      For Android, we can use chrome://inspect/#devices to do remote debugging for
+      Chrome, but not for other browsers.
+      https://developer.chrome.com/docs/devtools/remote-debugging
+      
+      However, the port-forwarding feature of chrome://inspect/#devices can be
+      used on any web browser on the Android device, which allows us to run the
+      webpage from "npm run dev" instead of having to build first.
+      
+      ^ It seems like this often requires opening the page in Chrome first before
+      then opening the page in the other browser for some reason.
+      */
+      import("eruda").then ( (module) => { module.default.init() })
+    }
+    
+    // window.eruda = eruda
     return ()=> {
       window.visualViewport.removeEventListener("resize", updateUserHasPinchZoomedOnResize)
       document.removeEventListener("touchend", onDocumentTouchEndOrMouseUp)
