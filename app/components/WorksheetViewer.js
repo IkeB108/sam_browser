@@ -15,14 +15,16 @@ const pagesAreHiddenStore = create( (set) => ({
 const usePageDraggingStore = create( (set) => ({
   userIsDraggingPages: false,
   touchStartX: null,
-  currentPageOnTouchStart: null
+  currentPageOnTouchStart: null,
+  currentGestureIncludesMultitouch: false
 }))
 
 const dragToChangeCurrentPageIsAllowed = function(){
   const { userHasPinchZoomed } = useUserHasPinchZoomedStore.getState()
   const { pagesAreHidden } = pagesAreHiddenStore.getState()
   const { currentWorksheet } = useSessionStateStore.getState()
-  return !userHasPinchZoomed && !pagesAreHidden && (currentWorksheet.worksheetIndex != null)
+  const { currentGestureIncludesMultitouch } = usePageDraggingStore.getState()
+  return !userHasPinchZoomed && !pagesAreHidden && (currentWorksheet.worksheetIndex != null) && !currentGestureIncludesMultitouch
 }
 
 function onKeyDownInWorksheetViewer(event){
@@ -41,9 +43,8 @@ function onKeyDownInWorksheetViewer(event){
 function onPageContainerPointerDown(event){
   const pageChangeAllowed = dragToChangeCurrentPageIsAllowed()
   if(!pageChangeAllowed) return;
-  if(pageChangeAllowed){
-    event.preventDefault()
-  }
+  
+  event.preventDefault()
   
   const eventX = event.touches ? event.touches[0].clientX : event.clientX
   usePageDraggingStore.setState({
@@ -54,10 +55,25 @@ function onPageContainerPointerDown(event){
   
 }
 
+function onDocumentTouchStart(event){
+  if(event.touches.length > 1){
+    //If the current gesture involves multiple fingers, even if only for a moment,
+    //then assume that zooming has been involved and do not allow page dragging
+    //until all fingers have been released from the screen.
+    usePageDraggingStore.setState({ currentGestureIncludesMultitouch: true })
+  }
+}
+
+function onDocumentTouchEnd(event){
+  if(event.touches.length == 0){
+    usePageDraggingStore.setState({ currentGestureIncludesMultitouch: false })
+  }
+}
+
 function onDocumentPointerMove(event){
   const dragDistanceOfOneIncrement = 60 //px
   const { userIsDraggingPages, touchStartX, currentPageOnTouchStart } = usePageDraggingStore.getState()
-  if(!userIsDraggingPages) return;
+  if(!userIsDraggingPages || !dragToChangeCurrentPageIsAllowed()) return;
   
   const { setCurrentPageOfWorksheet, getCurrentWorksheetID } = useSessionStateStore.getState()
   event.preventDefault()
@@ -90,13 +106,14 @@ function onDocumentPointerMove(event){
 }
 
 function onDocumentPointerUp(event){
-  const { userIsDraggingPages } = usePageDraggingStore.getState()
-  if(userIsDraggingPages){
+  const { userIsDraggingPages, currentGestureIncludesMultitouch } = usePageDraggingStore.getState()
+  if(userIsDraggingPages && !currentGestureIncludesMultitouch){
     event.preventDefault()
     usePageDraggingStore.setState({
       userIsDraggingPages: false,
       currentPageOnTouchStart: null,
-      touchStartX: null
+      touchStartX: null,
+      currentGestureIncludesMultitouch: false
     })
   }
 }
@@ -108,23 +125,39 @@ function WorksheetViewer(){
     window.usePageDraggingStore = usePageDraggingStore
     //Add keydown listener for left and right arrowkeys
     document.addEventListener("keydown", onKeyDownInWorksheetViewer)
-    //Add touchmove event listeners
+    //Add touchstart & touchend event listener (for detecting multitouch only)
+    document.addEventListener("touchstart", onDocumentTouchStart)
+    document.addEventListener("touchend", onDocumentTouchEnd)
+    //Add pointermove event listeners
     document.addEventListener("pointermove", onDocumentPointerMove)
-    //Add touchend event listeners
+    //Add pointerup event listeners
     document.addEventListener("pointerup", onDocumentPointerUp)
     
     return () => {
       //Remove keydown listener for left and right arrowkeys
       document.removeEventListener("keydown", onKeyDownInWorksheetViewer)
-      //Remove touchmove event listeners
+      //Add touchstart & touchend event listener (for detecting multitouch only)
+      document.removeEventListener("touchstart", onDocumentTouchStart)
+      document.removeEventListener("touchend", onDocumentTouchEnd)
+      //Remove pointermove event listeners
       document.removeEventListener("pointermove", onDocumentPointerMove)
-      //Remove touchend event listeners
+      //Remove pointerup event listeners
       document.removeEventListener("pointerup", onDocumentPointerUp)
     }
   }, [])
   const { addWorksheetModalIsOpen } = useAddWorksheetModalIsOpenStore()
   const userIsDraggingPages = usePageDraggingStore( (state) => state.userIsDraggingPages )
   const madisonModeActive = useUserSettingsStore( (state) => state.madisonMode )
+  
+  //For debugging: Color background according to page drag state
+  //Decide whether dragging to change page is allowed to determine cursor style
+  //We won't use dragToChangeCurrentPageIsAllowed because we need all the hooks to be in the body of the component
+  // const userHasPinchZoomed = useUserHasPinchZoomedStore( (state) => state.userHasPinchZoomed )
+  // const pagesAreHidden = pagesAreHiddenStore( (state) => state.pagesAreHidden )
+  // const currentWorksheet = useSessionStateStore( (state) => state.currentWorksheet )
+  // const currentGestureIncludesMultitouch = usePageDraggingStore( (state) => state.currentGestureIncludesMultitouch )
+  // const allowDragPages = !userHasPinchZoomed && !pagesAreHidden && (currentWorksheet.worksheetIndex != null) && !currentGestureIncludesMultitouch
+  
   const worksheetViewerStyle = {
     width: "100%",
     height: "100%",
@@ -134,6 +167,7 @@ function WorksheetViewer(){
     containerType: "size",
     cursor: userIsDraggingPages ? "ew-resize" : "default",
     backgroundColor: madisonModeActive ? "#ffc6f3" : "white"
+    // backgroundColor: currentGestureIncludesMultitouch ? "blue" : ( allowDragPages ? "white" : "gray" )
   }
   
   
@@ -439,7 +473,8 @@ function PageContainer( {isLeftOrRight} ){
   const userHasPinchZoomed = useUserHasPinchZoomedStore( (state) => state.userHasPinchZoomed )
   const pagesAreHidden = pagesAreHiddenStore( (state) => state.pagesAreHidden )
   const currentWorksheet = useSessionStateStore( (state) => state.currentWorksheet )
-  const allowDragPages = !userHasPinchZoomed && !pagesAreHidden && (currentWorksheet.worksheetIndex != null)
+  const currentGestureIncludesMultitouch = usePageDraggingStore( (state) => state.currentGestureIncludesMultitouch )
+  const allowDragPages = !userHasPinchZoomed && !pagesAreHidden && (currentWorksheet.worksheetIndex != null) && !currentGestureIncludesMultitouch
   
   const pageContainerStyle = {
     position: "absolute",
