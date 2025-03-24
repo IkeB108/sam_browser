@@ -5,7 +5,7 @@ import { create } from 'zustand'
 import WorksheetViewer from './components/WorksheetViewer.js'
 import SettingsPage from './components/SettingsPage.js'
 import { retrieveWorksheetsFromIndexedDB, setStatusMessageOfWorksheetProcess } from "./components/SettingsPage.js"
-import { useUserHasPinchZoomedStore } from "./stores.js"
+import { useUserHasPinchZoomedStore, useUserJustClickedMoveStore } from "./stores.js"
 import constants from "./constants.js"
 
 //Keys in allPages use PascalCasing to match the react component names
@@ -77,15 +77,15 @@ const useAllStudentsStore = create(createAllStudentsStore) //Returns a store hoo
 //Filler data for debugging
 const fillerStudentData = {
   "1": { //id number for the student (to avoid glitches w same-name students)
-    "name": "Sidon",
+    "name": "Student 1",
     "color": "pink"
   },
   "2": {
-    "name": "Yunobo",
+    "name": "Student 2",
     "color": "purple"
   },
   "3": {
-    "name": "Tulin",
+    "name": "Student 3",
     "color": "blue"
   }
 }
@@ -120,10 +120,7 @@ const useSessionStateStore = create( (set)=> ({
   //   set( () => ({ highestPositionInWorksheetSelectionPanel: highestPositionInWorksheetSelectionPanel + 1 }) )
   // }
   openStudents: [
-    {"openWorksheets": [ 
-      {id: "(OLD) 03.01-05 HF (USA) 1-1 WS", pageLeftOff: 0},
-      {id: "(OLD) 03.06-12 TP (USA) 1-1 WS", pageLeftOff: 0}
-    ], "studentIDNumber": "1"},
+    {"openWorksheets": [], "studentIDNumber": "1"},
     {"openWorksheets": [], "studentIDNumber": "2"},
     {"openWorksheets": [], "studentIDNumber": "3"},
     {"openWorksheets": [], "studentIDNumber": "other"}
@@ -276,12 +273,16 @@ function HomePage() {
     width: "100%",
     maxWidth: (pageView == "double") ? "1500px" : "1000px",
     color: constants.nearBlackColor,
-    touchAction: userHasPinchZoomed ? "auto" : "pinch-zoom", //If the user has pinch zoomed, allow panning. If not, disable panning
+    // touchAction: userHasPinchZoomed ? "auto" : "pinch-zoom", 
     margin: "0 auto"
   }
   
-  const sessionStateStore = useSessionStateStore()
-  const currentPage = sessionStateStore.currentPage
+  // const sessionStateStore = useSessionStateStore()
+  const currentPage = useSessionStateStore( (state)=> state.currentPage )
+  
+  if(currentPage == "WorksheetViewer"){
+    homePageStyle.touchAction = (userHasPinchZoomed) ? "auto" : "pinch-zoom" //If the user has pinch zoomed, allow panning. If not, disable panning
+  }
   /*
   When HomePage mounts for the first time, initialize allStudentsStore by grabbing
   allStudents from localStorage. Pass an empty dependency array [] into useEffect to tell React
@@ -303,10 +304,18 @@ function HomePage() {
   */
   const onClick = function(){
     if(currentPage == "WorksheetViewer"){
-      if(sessionStateStore.userIsMovingCurrentWorksheet && sessionStateStore.userCanClickAnywhereToDisableMovingCurrentWorksheet){
-        sessionStateStore.setUserIsMovingCurrentWorksheet(false)
-        sessionStateStore.setUserCanClickAnywhereToDisableMovingCurrentWorksheet(false)
+      const { userIsMovingCurrentWorksheet, userCanClickAnywhereToDisableMovingCurrentWorksheet } = useSessionStateStore.getState()
+      const { userJustClickedMove } = useUserJustClickedMoveStore.getState()
+      if(!userJustClickedMove && userIsMovingCurrentWorksheet && userCanClickAnywhereToDisableMovingCurrentWorksheet){
+        const { setUserIsMovingCurrentWorksheet, setUserCanClickAnywhereToDisableMovingCurrentWorksheet } = useSessionStateStore.getState()
+        setUserIsMovingCurrentWorksheet(false)
+        setUserCanClickAnywhereToDisableMovingCurrentWorksheet(false)
       }
+      // if(sessionStateStore.userIsMovingCurrentWorksheet && sessionStateStore.userCanClickAnywhereToDisableMovingCurrentWorksheet){
+      //   console.log("set to false")
+      //   sessionStateStore.setUserIsMovingCurrentWorksheet(false)
+      //   sessionStateStore.setUserCanClickAnywhereToDisableMovingCurrentWorksheet(false)
+      // }
     }
   }
   return (

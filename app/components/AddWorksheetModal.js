@@ -1,11 +1,9 @@
 import { GenericModal, CloseButton, GenericPillButton, PressDownButton } from "../constants.js";
 import constants from "../constants.js";
 import { useAddWorksheetModalIsOpenStore } from "../stores"
-import { useSessionStateStore, useAllStudentsStore } from "../page.js"
+import { useSessionStateStore, useAllStudentsStore, useUserSettingsStore } from "../page.js"
 import {  useRef, useEffect } from "react";
 import { create } from "zustand";
-
-
 
 const useSearchInputValueStore = create((set) => ({
   searchInputValue: "",
@@ -90,33 +88,43 @@ const useHighlightedResultIndexStore = create((set) => ({
 
 function onKeyDownInAddWorksheetModal(event) {
   //If user pressed up or down arrow key, update highlighted result index
-  
+  //If pressed enter, accept highlighted result
+  //If user pressed any other key, assume they're trying to type in the serach input
+  let userIsNavigating = false
   const { searchResults } = searchResultsStore.getState();
   //If there are no search results, do nothing
-  if(searchResults.length == 0)return
-  
-  const { highlightedResultIndex } = useHighlightedResultIndexStore.getState();
-  let newHighlightedResultIndex = highlightedResultIndex
-  if(event.key == "ArrowDown") {
-    newHighlightedResultIndex ++
-    event.preventDefault();
+  if(searchResults.length > 0){
+    const { highlightedResultIndex } = useHighlightedResultIndexStore.getState();
+    let newHighlightedResultIndex = highlightedResultIndex
+    if(event.key == "ArrowDown") {
+      newHighlightedResultIndex ++
+      event.preventDefault();
+      userIsNavigating = true
+    }
+    if(event.key == "ArrowUp") {
+      newHighlightedResultIndex --
+      event.preventDefault();
+      userIsNavigating = true
+    }
+    //Correct newhighlightedresultindex to be within range of search results
+    if(newHighlightedResultIndex < 0)newHighlightedResultIndex = searchResults.length - 1
+    if(newHighlightedResultIndex >= searchResults.length)newHighlightedResultIndex = 0
+    
+    //Only update highlightedresultindex if it's changed
+    if( newHighlightedResultIndex != highlightedResultIndex){
+      useHighlightedResultIndexStore.getState().setHighlightedResultIndex(newHighlightedResultIndex)
+    }
+    
+    if(event.key == "Enter"){
+      attemptToAddHighlightedWorksheet()
+      event.preventDefault();
+      userIsNavigating = true
+    }
   }
-  if(event.key == "ArrowUp") {
-    newHighlightedResultIndex --
-    event.preventDefault();
-  }
-  //Correct newhighlightedresultindex to be within range of search results
-  if(newHighlightedResultIndex < 0)newHighlightedResultIndex = searchResults.length - 1
-  if(newHighlightedResultIndex >= searchResults.length)newHighlightedResultIndex = 0
   
-  //Only update highlightedresultindex if it's changed
-  if( newHighlightedResultIndex != highlightedResultIndex){
-    useHighlightedResultIndexStore.getState().setHighlightedResultIndex(newHighlightedResultIndex)
-  }
   
-  if(event.key == "Enter"){
-    attemptToAddHighlightedWorksheet()
-    event.preventDefault();
+  if(!userIsNavigating){
+    document.querySelector("#searchInput").focus()
   }
 }
 
@@ -294,6 +302,7 @@ function SearchBar(){
         style={searchBarStyle}
         value={searchInputValue}
         onChange={handleInputChange}
+        id="searchInput"
       />
       <CloseButton iconWidthString="14px" color="black" onClickFunction={onClearClick} additionalStyleObject={clearButtonStyle} />
     </div>
@@ -582,13 +591,15 @@ function getSearchResults(query){
 
 function addWorksheetToStudent(worksheetId, closeAddWorksheetModal){
   const { indexOfStudentAddingFor } = useAddWorksheetModalIsOpenStore.getState()
-  const { openStudents } = useSessionStateStore.getState()
+  const { openStudents, setCurrentPageOfWorksheet, setCurrentWorksheet } = useSessionStateStore.getState()
   const student = openStudents[indexOfStudentAddingFor]
   // If this student doesn't already have this worksheet open, add it
   const indexOfThisWorksheetInOpenWorksheets = findWorksheetWithIdInArray(worksheetId, student.openWorksheets)
   let indexOfWorksheetToFocus;
+  let newCurrentPage = null;
   if(indexOfThisWorksheetInOpenWorksheets == null){
-    student.openWorksheets.push({"id": worksheetId, pageLeftOff: 0})
+    newCurrentPage = (useUserSettingsStore.getState().pageView == "single") ? 1 : 0
+    student.openWorksheets.push({"id": worksheetId, pageLeftOff: newCurrentPage})
     indexOfWorksheetToFocus = student.openWorksheets.length - 1
     // console.log("didn't find worksheet so added it")
   } else {
@@ -597,7 +608,11 @@ function addWorksheetToStudent(worksheetId, closeAddWorksheetModal){
   }
   
   //Make the new worksheet the currentWorksheet in sessionstatestore
-  useSessionStateStore.getState().setCurrentWorksheet(indexOfStudentAddingFor, indexOfWorksheetToFocus)
+  setCurrentWorksheet(indexOfStudentAddingFor, indexOfWorksheetToFocus)
+  if(newCurrentPage !== null){
+    console.log({newCurrentPage})
+    setCurrentPageOfWorksheet(newCurrentPage)
+  }
   
   if(closeAddWorksheetModal){
     useAddWorksheetModalIsOpenStore.getState().setAddWorksheetModalIsOpen(false)

@@ -2,7 +2,7 @@ import constants from "../constants.js"
 import { create } from "zustand"
 import { CloseButton, GenericPillButton } from "../constants.js"
 import { useAllStudentsStore, useSessionStateStore, useUserSettingsStore, worksheets } from "../page.js"
-import { useStatusMessageStore, useAWorksheetProcessIsBusyStore, useAddWorksheetModalIsOpenStore, useUserHasPinchZoomedStore } from "../stores.js"
+import { useUserJustClickedMoveStore, useStatusMessageStore, useAWorksheetProcessIsBusyStore, useAddWorksheetModalIsOpenStore, useUserHasPinchZoomedStore } from "../stores.js"
 import { AddWorksheetModal } from "./AddWorksheetModal.js"
 
 import { useEffect, useRef } from "react"
@@ -837,11 +837,16 @@ function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
 
 function onMoveWorksheetClick(){
   //Toggle whether user is moving a worksheet
+  // console.log("click")
   const { userIsMovingCurrentWorksheet, setUserIsMovingCurrentWorksheet, setUserCanClickAnywhereToDisableMovingCurrentWorksheet, currentWorksheet } = useSessionStateStore.getState()
   const aWorksheetIsSelected = currentWorksheet.openStudentIndex !== null
   if(!aWorksheetIsSelected) return;
   if(!userIsMovingCurrentWorksheet){
     setUserCanClickAnywhereToDisableMovingCurrentWorksheet(true)
+    useUserJustClickedMoveStore.setState(  { userJustClickedMove: true } )
+    setTimeout( ()=> {
+      useUserJustClickedMoveStore.setState( { userJustClickedMove: false } )
+    }, 100)
   }
   setUserIsMovingCurrentWorksheet( !userIsMovingCurrentWorksheet )
 }

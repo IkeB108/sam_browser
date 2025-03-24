@@ -288,7 +288,7 @@ function mapWorksheetIDsToIntegers(){
   const worksheetIDs = Object.keys(worksheets)
   const worksheetIDToIntegerMap = {}
   for(let i = 0; i < worksheetIDs.length; i++){
-    if(worksheetIDs[i] == "keys") continue;
+    if(worksheetIDs[i] == "keys" || worksheetIDs[i] == "integerMap") continue;
     const splitID = worksheetIDs[i].split(" ")
     let integerString = ""
     for(let j = 0; j < splitID.length; j ++){

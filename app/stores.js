@@ -19,6 +19,10 @@ export const useUserHasPinchZoomedStore = create( (set) => {
   }
 })
 
+export const useUserJustClickedMoveStore = create( (set) => ({
+  userJustClickedMove: false
+}))
+
 export const useAddWorksheetModalIsOpenStore = create( (set)=> ({
   addWorksheetModalIsOpen: false,
   setAddWorksheetModalIsOpen: (newValue)=>{ set( ()=>({ addWorksheetModalIsOpen: newValue }) ) },
