@@ -358,7 +358,7 @@ function clearWorksheetsInIndexedDB(){
 function StatusParagraph(){
   const statusMessage = useStatusMessageStore().statusMessage
   return (
-    <p style={{whiteSpace: "pre-wrap"}}>{statusMessage}</p>
+    <p style={{whiteSpace: "pre-wrap", height: "30px"}}>{statusMessage}</p>
   )
 }
 

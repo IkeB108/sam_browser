@@ -252,7 +252,7 @@ function PagePanel(){
   if(aWorksheetProcessIsBusy){
     wrapperForBothPages = (
       <div id="wrapper-for-both-pages" style={wrapperForBothPagesStyle}>
-        <p>{statusMessage}</p>
+        <p style={{height: "30px"}}>{statusMessage}</p>
       </div>
     )
   } else {

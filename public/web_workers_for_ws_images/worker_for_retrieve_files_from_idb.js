@@ -1,4 +1,17 @@
+let loadingAnimationIconCount = 0
+let latestStatusMessage = null
+let useLoadingAnimation = false
 self.onmessage = async function(event){
+  let loadingAnimationInterval = setInterval( ()=> {
+    if(useLoadingAnimation){
+      loadingAnimationIconCount = (loadingAnimationIconCount + 1) % 9
+      self.postMessage({
+        type: "status_update_from_web_worker",
+        content: latestStatusMessage + " " + "*".repeat(loadingAnimationIconCount)
+      })
+    }
+  }, 200)
+  
   let idbDatabaseVersion = event.data.idbDatabaseVersion
   
   let request = indexedDB.open("worksheetDatabase", idbDatabaseVersion) 
@@ -20,11 +33,13 @@ self.onmessage = async function(event){
       if(cursor){
         newWorksheets[cursor.key] = cursor.value
         worksheetsLoadedCount ++
-        if(worksheetsLoadedCount % 50 == 0){
-          self.postMessage({
-            "type": "status_update_from_web_worker",
-            "content": "Retrieving worksheet #" + worksheetsLoadedCount + " from your device.."
-          })
+        if(worksheetsLoadedCount % 39 == 0){
+          useLoadingAnimation = true
+          latestStatusMessage = "Retrieving worksheet #" + worksheetsLoadedCount + " from your device..."
+          // self.postMessage({
+          //   "type": "status_update_from_web_worker",
+          //   "content": "Retrieving worksheet #" + worksheetsLoadedCount + " from your device.."
+          // })
         }
         cursor.continue()
       } else {
@@ -36,6 +51,8 @@ self.onmessage = async function(event){
     }
     
     transaction.oncomplete = function(){
+      clearInterval(loadingAnimationInterval)
+      useLoadingAnimation = false
       self.postMessage({
         "type": "status_update_from_web_worker",
         "content": worksheetsLoadedCount + " worksheets retrieved from your device"

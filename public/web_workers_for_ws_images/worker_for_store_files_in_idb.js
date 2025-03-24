@@ -1,4 +1,16 @@
+let loadingAnimationIconCount = 0
+let latestStatusMessage = null
+let useLoadingAnimation = false
 self.onmessage = async function(event){
+  let loadingAnimationInterval = setInterval( ()=> {
+    if(useLoadingAnimation){
+      loadingAnimationIconCount = (loadingAnimationIconCount + 1) % 9
+      self.postMessage({
+        type: "status_update_from_web_worker",
+        content: latestStatusMessage + " " + "*".repeat(loadingAnimationIconCount)
+      })
+    }
+  }, 200)
   let worksheets = event.data.worksheets
   let idbDatabaseVersion = event.data.idbDatabaseVersion
   
@@ -15,14 +27,18 @@ self.onmessage = async function(event){
     for(let worksheetID in worksheets){
       objectStore.put(worksheets[worksheetID], worksheetID)
       worksheetCount ++
-      if(worksheetCount % 50 == 0){
-        self.postMessage({
-          "type": "status_update_from_web_worker",
-          "content": "Storing worksheet #" + worksheetCount + " on your device..."
-        })
+      if(worksheetCount % 39 == 0){
+        useLoadingAnimation = true
+        latestStatusMessage = "Storing worksheet #" + worksheetCount + " on your device..."
+        // self.postMessage({
+        //   "type": "status_update_from_web_worker",
+        //   "content": "Storing worksheet #" + worksheetCount + " on your device..."
+        // K
       }
     }
     transaction.oncomplete = function(){
+      clearInterval(loadingAnimationInterval)
+      useLoadingAnimation = false
       self.postMessage({
         "type": "status_update_from_web_worker",
         "content": "All worksheets stored: " + worksheetCount + " files"
