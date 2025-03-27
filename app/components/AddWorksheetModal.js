@@ -366,10 +366,10 @@ function KeypadKey({val}){
     backgroundColor: "white",
     border: "1px solid #DAD6D5",
     boxShadow: "0px 1px 4px #0000001a",
-    width: "55px",
-    height: "55px",
+    width: "50px",
+    height: "50px",
     color: "#3D3D3D",
-    borderRadius: "10px",
+    borderRadius: "7px",
     fontFamily: "Roboto, sans-serif",
     fontSize: "30px",
     // cursor: "pointer",
@@ -398,8 +398,8 @@ function KeypadKey({val}){
   }
   
   const invisWrapperStyle = {
-    width: "63px",
-    height: "63px",
+    width: "55px",
+    height: "55px",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -473,7 +473,7 @@ function Keypad(){
     display: "flex",
     // gap: "6px",
     justifyContent: "center",
-    marginBottom: "20px"
+    marginBottom: "10px"
   }
   return (
     <div style={keypadStyle}>
@@ -610,7 +610,6 @@ function addWorksheetToStudent(worksheetId, closeAddWorksheetModal){
   //Make the new worksheet the currentWorksheet in sessionstatestore
   setCurrentWorksheet(indexOfStudentAddingFor, indexOfWorksheetToFocus)
   if(newCurrentPage !== null){
-    console.log({newCurrentPage})
     setCurrentPageOfWorksheet(newCurrentPage)
   }
   

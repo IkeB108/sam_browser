@@ -18,7 +18,8 @@ function SettingsPage(){
     height: "100%",
     boxSizing: "border-box",
     padding: "16px",
-    backgroundColor: madisonModeActive ? "#ffc6f3" : "white"
+    backgroundColor: madisonModeActive ? "#ffc6f3" : "white",
+    position: "relative"
   }
   
   const closeButtonAdditionalStyle = {

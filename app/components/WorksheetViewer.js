@@ -4,8 +4,9 @@ import { CloseButton, GenericPillButton } from "../constants.js"
 import { useAllStudentsStore, useSessionStateStore, useUserSettingsStore, worksheets } from "../page.js"
 import { useUserJustClickedMoveStore, useStatusMessageStore, useAWorksheetProcessIsBusyStore, useAddWorksheetModalIsOpenStore, useUserHasPinchZoomedStore } from "../stores.js"
 import { AddWorksheetModal } from "./AddWorksheetModal.js"
-
 import { useEffect, useRef } from "react"
+
+const useIsFullscreenStore = create( (set) => ({ isFullscreen: false }))
 
 const pagesAreHiddenStore = create( (set) => ({
   pagesAreHidden: false,
@@ -118,11 +119,23 @@ function onDocumentPointerUp(event){
   }
 }
 
+function enableFullscreen(){
+  document.body.requestFullscreen()
+  useIsFullscreenStore.setState({ isFullscreen: true })
+}
+
+function disableFullscreen(){
+  document.exitFullscreen()
+  useIsFullscreenStore.setState({ isFullscreen: false })
+}
+
 function WorksheetViewer(){
   useEffect( ()=> {
     //for debugging in console
     window.useAddWorksheetModalIsOpenStore = useAddWorksheetModalIsOpenStore
     window.usePageDraggingStore = usePageDraggingStore
+    window.enableFullscreen = enableFullscreen
+    window.disableFullscreen = disableFullscreen
     //Add keydown listener for left and right arrowkeys
     document.addEventListener("keydown", onKeyDownInWorksheetViewer)
     //Add touchstart & touchend event listener (for detecting multitouch only)
@@ -132,6 +145,8 @@ function WorksheetViewer(){
     document.addEventListener("pointermove", onDocumentPointerMove)
     //Add pointerup event listeners
     document.addEventListener("pointerup", onDocumentPointerUp)
+    
+    useSessionStateStore.getState().loadFromLocalStorage()
     
     return () => {
       //Remove keydown listener for left and right arrowkeys
@@ -172,7 +187,7 @@ function WorksheetViewer(){
   
   
   return (
-    <div style={worksheetViewerStyle}>
+    <div style={worksheetViewerStyle} id="worksheetViewerDiv">
       <PagePanel />
       <WorksheetSelectionPanel />
       {
@@ -260,7 +275,7 @@ function PagePanel(){
       const wrapperForLeftPageStyle = {
         position: "relative",
         width: "50%",
-        marginRight: `${marginBetweenPages}px`,
+        // marginRight: `${marginBetweenPages}px`,
         height: "100%",
       }
       
@@ -328,6 +343,9 @@ function changePage( prevOrNext ){
 }
 
 function PagePanelFooter(){
+  
+  const { isFullscreen } = useIsFullscreenStore()
+  
   const pagePanelFooterStyle = {
     paddingTop: "16px",
     // border: "1px solid blue",
@@ -406,6 +424,26 @@ function PagePanelFooter(){
       }
   </GenericPillButton>
   
+  const toggleFullscreenButton =
+  <GenericPillButton
+    isFilled={true}
+    isShort={true}
+    additionalStyleObject={{paddingLeft: "min(2vw, 30px)", paddingRight: "min(2vw, 30px)"}}
+    functionToTrigger={ () => {
+        if(document.fullscreenElement){
+          disableFullscreen()
+        } else {
+          enableFullscreen()
+        }
+      }
+    }>
+      {
+        isFullscreen ?
+          <img src={constants.iconsFolderPath + "/fullscreen_exit.svg"} alt="Toggle Fullscreen" /> :
+          <img src={constants.iconsFolderPath + "/fullscreen.svg"} alt="Toggle Fullscreen" />
+      }
+  </GenericPillButton>
+  
   const prevPageButton =
   <GenericPillButton
     isFilled={false}
@@ -443,6 +481,7 @@ function PagePanelFooter(){
   return (
     <div style={pagePanelFooterStyle}>
       <div style={footerSegmentStyle}>
+        { toggleFullscreenButton }
         { togglePageViewButton }
         { togglePageVisibilityButton }
         { moveButton }
@@ -483,7 +522,7 @@ function PageContainer( {isLeftOrRight} ){
     maxHeight: "100%",
     aspectRatio: "496 / 702",
     cursor: allowDragPages ? "ew-resize" : "default",
-    userSelect: "none"
+    userSelect: "none",
   }
   // This container will be the exact same size as the page image
   const { currentPageOfWorksheet, getCurrentWorksheetID } = useSessionStateStore()
@@ -515,8 +554,8 @@ function PageNumberIndicator({isLeftOrRight, pageNumber, pageExists}){
   const pageNumberIndicatorStyle = {
     position: "absolute",
     bottom: "15px",
-    width: "44px",
-    height: "44px",
+    width: "38px",
+    height: "38px",
     backgroundColor: "white",
     borderRadius: "4px",
     border: "1px solid #3D3D3D",
@@ -600,7 +639,7 @@ function WorksheetSelectionPanel(){
       <div style={worksheetSelectionPanelStyle}>
         {
           openStudents.map( (studentData, index) => {
-            return <StudentSessionCard index={index} key={studentData.studentIDNumber} studentIDNumber={studentData.studentIDNumber} />
+            return <StudentSessionCard index={index} key={studentData.studentIDNumber + "_" + index} studentIDNumber={studentData.studentIDNumber} />
           } )
         }
         <AddStudentButton />
@@ -904,8 +943,46 @@ function AddWorksheetButton({ studentIDNumber, styleObject, index }){
 }
 
 function AddStudentButton(){
+  const idOfLastStudentAdded = useSessionStateStore(  (state) => state.idOfLastStudentAdded )
+  const tooManyStudents = idOfLastStudentAdded == "99" ? true : false
+  const onClick = function(){
+    if(tooManyStudents){
+      const confirmRestart = window.confirm("You have added the maximum number of students. Would you like to clear and restart the session?")
+      if(confirmRestart){
+        useSessionStateStore.getState().setOpenStudents(
+          // [
+          //   {"openWorksheets": [], "studentIDNumber": "1"},
+          //   {"openWorksheets": [], "studentIDNumber": "2"},
+          //   {"openWorksheets": [], "studentIDNumber": "3"},
+          //   {"openWorksheets": [], "studentIDNumber": "other"}
+          // ]
+            [ {"openWorksheets": [], "studentIDNumber": "other"} ]
+        )
+        useSessionStateStore.setState( (state) => ({ idOfLastStudentAdded: "0" }) )
+        useSessionStateStore.getState().setCurrentWorksheet(null, null)
+      }
+      return
+    }
+    
+    //currentWorksheet is defined by the index of the open student, so if a new student
+    //is added above the "other" student card, the openStudentIndex will be offset by one. This corrects that
+    const { currentWorksheet, openStudents } = useSessionStateStore.getState()
+    if( currentWorksheet.openStudentIndex == openStudents.length - 1 ){
+      useSessionStateStore.getState().setCurrentWorksheet(openStudents.length, 0)
+      console.log( openStudents.length - 1 )
+    }
+    
+    let nextStudentID = ( Number(idOfLastStudentAdded) ) % 99 + 1
+    nextStudentID = nextStudentID.toString()
+    if(openStudents.length == 1){
+      nextStudentID = "1"
+    }
+    useSessionStateStore.getState().addOpenStudentToBottom(nextStudentID)
+    useSessionStateStore.setState( (state) => ({ idOfLastStudentAdded: nextStudentID }) )
+    
+  }
   return (
-    <GenericPillButton useOnClick={true} isFilled={true} isShort={true} functionToTrigger={()=>{console.log("Add student")}} additionalStyleObject={{margin: "0 auto", paddingLeft: "30px", paddingRight: "30px"}} >
+    <GenericPillButton useOnClick={true} isFilled={true} isShort={true} functionToTrigger={onClick} additionalStyleObject={{margin: "0 auto", paddingLeft: "30px", paddingRight: "30px"}} >
       <img src={constants.iconsFolderPath + "/add_white.svg"} alt="Add student" style={{ width: "12px", height: "12px", marginRight: "8px" }}/>
       <p style={{margin: "0", padding: "0"}}>Add Student</p>
     </GenericPillButton>

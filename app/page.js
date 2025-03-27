@@ -68,25 +68,37 @@ const createAllStudentsStore = function(set){ //Store initializer
     that calls initAllStudents(), and also pass in an empty dependency array [], which tells React to only
     run that function once when the component is mounted.
     */
-   setAllStudents: (newValue) => { set( setAllStudentsToValue(newValue) ) }
+   setAllStudents: (newValue) => { set( setAllStudentsToValue(newValue) ) },
   }
 }
 
 const useAllStudentsStore = create(createAllStudentsStore) //Returns a store hook
 
 //Filler data for debugging
-const fillerStudentData = {
-  "1": { //id number for the student (to avoid glitches w same-name students)
-    "name": "Student 1",
-    "color": "pink"
-  },
-  "2": {
-    "name": "Student 2",
-    "color": "purple"
-  },
-  "3": {
-    "name": "Student 3",
-    "color": "blue"
+// const fillerStudentData = {
+//   "1": { //id number for the student (to avoid glitches w same-name students)
+//     "name": "Student 1",
+//     "color": "pink"
+//   },
+//   "2": {
+//     "name": "Student 2",
+//     "color": "purple"
+//   },
+//   "3": {
+//     "name": "Student 3",
+//     "color": "blue"
+//   }
+// }
+
+
+const fillerStudentData = {}
+if(true){
+  let colorCycle = "red orange yellow green cyan blue purple pink".split(" ")
+  for(let i = 1; i < 100; i ++){
+    fillerStudentData[i] = {
+      "name": "Student " + i,
+      "color": colorCycle[ (i-1) % colorCycle.length]
+    }
   }
 }
 useAllStudentsStore.getState().setAllStudents(fillerStudentData)
@@ -119,14 +131,18 @@ const useSessionStateStore = create( (set)=> ({
   //   set( ()=>({ openStudents: newOpenStudents }) )
   //   set( () => ({ highestPositionInWorksheetSelectionPanel: highestPositionInWorksheetSelectionPanel + 1 }) )
   // }
-  openStudents: [
-    {"openWorksheets": [], "studentIDNumber": "1"},
-    {"openWorksheets": [], "studentIDNumber": "2"},
-    {"openWorksheets": [], "studentIDNumber": "3"},
-    {"openWorksheets": [], "studentIDNumber": "other"}
-    // {"openWorksheets": [], "studentIDNumber": "3"}
-  ],
-  setOpenStudents: (newValue)=>{ set( ()=>({ openStudents: newValue }) ) },
+  // openStudents: [
+  //   {"openWorksheets": [], "studentIDNumber": "1"},
+  //   {"openWorksheets": [], "studentIDNumber": "2"},
+  //   {"openWorksheets": [], "studentIDNumber": "3"},
+  //   {"openWorksheets": [], "studentIDNumber": "other"}
+  // ],
+  
+  openStudents: [ {"openWorksheets": [], "studentIDNumber": "other"} ],
+  setOpenStudents: (newValue)=>{
+    set( ()=>({ openStudents: newValue }) );
+    useSessionStateStore.getState().saveToLocalStorage()
+  },
   deleteOpenStudent: (studentIDNumber)=>{
     /*
     When deleting a student, we need to update the openStudentIndex of the currentWorksheet
@@ -158,23 +174,40 @@ const useSessionStateStore = create( (set)=> ({
     } else {
       set( ()=>({ currentWorksheet: { openStudentIndex: newOpenStudentIndex, worksheetIndex: currentWorksheet.worksheetIndex } }) )
     }
+    
+    useSessionStateStore.getState().saveToLocalStorage()
   },
   addOpenStudentToBottom: (studentIDNumber)=>{
-    let newOpenStudents = useSessionStateStore.getState().openStudents.concat({"openWorksheets": [], "studentIDNumber": studentIDNumber})
+    // let newOpenStudents = useSessionStateStore.getState().openStudents.concat()
+    const newStudentData = {"openWorksheets": [], "studentIDNumber": studentIDNumber}
+    //Add newStudentData as second to last student in openStudents
+    let newOpenStudents = [...useSessionStateStore.getState().openStudents];
+    newOpenStudents.splice(newOpenStudents.length - 1, 0, newStudentData);
     set( ()=>({ openStudents: newOpenStudents }) )
+    
+    useSessionStateStore.getState().saveToLocalStorage()
   },
+  idOfLastStudentAdded: "0",
   
   currentPage: "WorksheetViewer",
-  setCurrentPage: (newValue)=>{ set( ()=>({ currentPage: newValue }) ) },
+  setCurrentPage: (newValue)=>{
+    set( ()=>({ currentPage: newValue }) )
+    useSessionStateStore.getState().saveToLocalStorage()
+  },
   currentWorksheet: { openStudentIndex: null, worksheetIndex: null },
-  setCurrentWorksheet: (openStudentIndex, worksheetIndex)=>{ set( ()=>({ currentWorksheet: { openStudentIndex: openStudentIndex, worksheetIndex: worksheetIndex } }) ) },
+  setCurrentWorksheet: (openStudentIndex, worksheetIndex)=>{
+    set( ()=>({ currentWorksheet: { openStudentIndex: openStudentIndex, worksheetIndex: worksheetIndex } }) )
+    useSessionStateStore.getState().saveToLocalStorage()
+  },
   getCurrentWorksheetID: ()=>{
     const { openStudents, currentWorksheet } = useSessionStateStore.getState()
     if(currentWorksheet.openStudentIndex === null || currentWorksheet.worksheetIndex === null) return null
     return openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex].id
   },
   userIsMovingCurrentWorksheet: false,
-  setUserIsMovingCurrentWorksheet: (newValue)=>{ set( ()=>({ userIsMovingCurrentWorksheet: newValue }) ) },
+  setUserIsMovingCurrentWorksheet: (newValue)=>{
+    set( ()=>({ userIsMovingCurrentWorksheet: newValue }) )
+  },
   userCanClickAnywhereToDisableMovingCurrentWorksheet: false,
   setUserCanClickAnywhereToDisableMovingCurrentWorksheet: (newValue)=>{ set( ()=>({ userCanClickAnywhereToDisableMovingCurrentWorksheet: newValue }) ) },
   currentPageOfWorksheet: 0, //Value of the page on the left
@@ -185,9 +218,45 @@ const useSessionStateStore = create( (set)=> ({
       openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex].pageLeftOff = newValue
       set({ openStudents: [...openStudents] })
     }
+    
+    useSessionStateStore.getState().saveToLocalStorage()
   },
   allowArrowKeysForPageNavigation: true,
   setAllowArrowKeysForPageNavigation: (newValue)=>{ set( ()=>({ allowArrowKeysForPageNavigation: newValue }) ) },
+  
+  saveToLocalStorage: () => {
+    const sessionState = useSessionStateStore.getState()
+    //Store only the following values in local storage
+    const partialSessionState = {
+      openStudents: sessionState.openStudents,
+      idOfLastStudentAdded: sessionState.idOfLastStudentAdded,
+      currentPage: sessionState.currentPage,
+      currentWorksheet: sessionState.currentWorksheet,
+      currentPageOfWorksheet: sessionState.currentPageOfWorksheet
+    }
+    localStorage.setItem("sessionState", JSON.stringify(partialSessionState))
+  },
+  
+  loadFromLocalStorage: () => {
+    const sessionStateFromLocalStorage = localStorage.getItem("sessionState")
+    if(sessionStateFromLocalStorage !== null){
+      console.log("loading sessionstate from local storage")
+      const partialSessionState = JSON.parse(sessionStateFromLocalStorage)
+      for(let i in partialSessionState.openStudents){
+        partialSessionState.openStudents[i].studentIDNumber = (Number(i) + 1).toString()
+        if(i == partialSessionState.openStudents.length - 1){
+          partialSessionState.openStudents[i].studentIDNumber = "other"
+        }
+      }
+      set( ()=>({
+        openStudents: partialSessionState.openStudents,
+        idOfLastStudentAdded: partialSessionState.idOfLastStudentAdded,
+        currentPage: partialSessionState.currentPage,
+        currentWorksheet: partialSessionState.currentWorksheet,
+        currentPageOfWorksheet: partialSessionState.currentPageOfWorksheet
+      }) )
+    }
+  }
 }))
 
 const useUserSettingsStore = create( (set)=> ({
