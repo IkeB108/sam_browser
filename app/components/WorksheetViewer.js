@@ -982,7 +982,7 @@ function AddStudentButton(){
     
   }
   return (
-    <GenericPillButton useOnClick={true} isFilled={true} isShort={true} functionToTrigger={onClick} additionalStyleObject={{margin: "0 auto", paddingLeft: "30px", paddingRight: "30px"}} >
+    <GenericPillButton useOnClick={true} isFilled={true} isShort={true} functionToTrigger={onClick} additionalStyleObject={{margin: "0 auto", paddingLeft: "15px", paddingRight: "15px"}} >
       <img src={constants.iconsFolderPath + "/add_white.svg"} alt="Add student" style={{ width: "12px", height: "12px", marginRight: "8px" }}/>
       <p style={{margin: "0", padding: "0"}}>Add Student</p>
     </GenericPillButton>

@@ -35,7 +35,7 @@ self.onmessage = async function(event){
         worksheetsLoadedCount ++
         if(worksheetsLoadedCount % 39 == 0){
           useLoadingAnimation = true
-          latestStatusMessage = "Retrieving worksheet #" + worksheetsLoadedCount + " from your device..."
+          latestStatusMessage = "Retrieving worksheet #" + worksheetsLoadedCount + " from your device's cache..."
           // self.postMessage({
           //   "type": "status_update_from_web_worker",
           //   "content": "Retrieving worksheet #" + worksheetsLoadedCount + " from your device.."
