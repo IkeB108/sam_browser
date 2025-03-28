@@ -56,7 +56,7 @@ function MadisonModeButton(){
   }
   return (
     <GenericPillButton isFilled={false} functionToTrigger={onClick}>
-      Madison Mode: {madisonModeActive ? "ON" : "OFF"}
+      Madison & Yeju Mode: {madisonModeActive ? "ON" : "OFF"}
     </GenericPillButton>
   )
 }

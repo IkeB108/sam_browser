@@ -1004,7 +1004,7 @@ function StudentSessionCardHeader({studentName, studentIDNumber, index}){
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    backgroundColor: madisonModeActive ? constants.purpleColor : constants.redColor,
+    backgroundColor: madisonModeActive ? "#1ab0cb" : constants.redColor,
     padding: "6px 10px",
     "--original-bg-color": constants.redColor,
     "--pulsate-bg-color": "#eb9286",
