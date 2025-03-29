@@ -223,6 +223,8 @@ const useSessionStateStore = create( (set)=> ({
   allowArrowKeysForPageNavigation: true,
   setAllowArrowKeysForPageNavigation: (newValue)=>{ set( ()=>({ allowArrowKeysForPageNavigation: newValue }) ) },
   
+  lastPointerInputWasTouch: true, //Use for determining whether worksheet search input should autofocus
+  
   saveToLocalStorage: () => {
     const sessionState = useSessionStateStore.getState()
     //Store only the following values in local storage
@@ -280,6 +282,17 @@ function updateUserHasPinchZoomedOnResize(){
 
 const worksheets = {}
 
+function onDocumentPointerDown(event){
+  const previousVal = useSessionStateStore.getState().lastPointerInputWasTouch
+  if(event.pointerType == "touch"){
+    if(previousVal == false)useSessionStateStore.setState(  { lastPointerInputWasTouch: true } )
+  }
+  if(event.pointerType == "mouse"){
+    if(previousVal == true)useSessionStateStore.setState(  { lastPointerInputWasTouch: false } )
+    
+  }
+}
+
 function HomePage() {
   const { userHasPinchZoomed } = useUserHasPinchZoomedStore()
   const { pageView } = useUserSettingsStore()
@@ -299,6 +312,10 @@ function HomePage() {
     window.visualViewport.addEventListener("resize", updateUserHasPinchZoomedOnResize)
     document.addEventListener("touchend", onDocumentTouchEndOrMouseUp)
     document.addEventListener("mouseup", onDocumentTouchEndOrMouseUp)
+    
+    //Add event listeners for detecting whether device is a touchscreen device
+    //(This only affects whether the worksheet search input autofocusses)
+    document.addEventListener("pointerdown", onDocumentPointerDown)
     updateUserHasPinchZoomedOnResize()
     
     if(window.location.href.includes("?eruda=true")){
@@ -330,6 +347,8 @@ function HomePage() {
       window.visualViewport.removeEventListener("resize", updateUserHasPinchZoomedOnResize)
       document.removeEventListener("touchend", onDocumentTouchEndOrMouseUp)
       document.removeEventListener("mouseup", onDocumentTouchEndOrMouseUp)
+      
+      document.removeEventListener("pointerdown", onDocumentPointerDown)
     }
   }, [])
   

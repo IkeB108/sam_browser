@@ -255,6 +255,14 @@ function SearchResultsContainer(){
 function SearchBar(){
   const { searchInputValue } = useSearchInputValueStore()
   
+  useEffect(() => {
+    if( !useSessionStateStore.getState().lastPointerInputWasTouch ){
+      //Autofocus the search input if the device is not a touch device
+      //(user is likely to use keyboard instead of onscreen keypad)
+      document.getElementById("searchInput").focus()
+    }
+  }, [])
+  
   const searchBarWrapperStyle = {
     width: "100%",
     height: "50px",
