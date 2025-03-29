@@ -41,10 +41,25 @@ function SettingsPage(){
       <ClearWorksheetImageDataButton />
       <br />
       <MadisonModeButton />
+      <br />
+      <ResetSessionButton />
       <br /><br />
       <StatusParagraph />
       
     </div>
+  )
+}
+
+function ResetSessionButton(){
+  const onClick = function(){
+    localStorage.clear()
+    window.location.reload()
+    //Same as appending "?reset" to the URL
+  }
+  return (
+    <GenericPillButton isFilled={false} functionToTrigger={onClick}>
+    🔄 Reset Session
+    </GenericPillButton>
   )
 }
 

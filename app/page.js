@@ -139,9 +139,9 @@ const useSessionStateStore = create( (set)=> ({
   // ],
   
   openStudents: [
-    {openWorksheets: [], type: "student", name: "Student 1", color: "green"},
-    {openWorksheets: [], type: "student", name: "Student 2", color: "green"},
-    {openWorksheets: [], type: "student", name: "Student 3", color: "green"},
+    {openWorksheets: [], type: "student", name: "Student 1", color: "green", notes: "", notesCopied: false},
+    {openWorksheets: [], type: "student", name: "Student 2", color: "green", notes: "", notesCopied: false},
+    {openWorksheets: [], type: "student", name: "Student 3", color: "green", notes: "", notesCopied: false},
     {openWorksheets: [], type: "other", name: "Other", color: "none"},
   ],
   numberInNameOfLastStudentAdded: 3,
@@ -178,7 +178,7 @@ const useSessionStateStore = create( (set)=> ({
     
   },
   addOpenStudentToBottom: (studentName, color)=>{
-    const newStudentData = {openWorksheets: [], type: "student", name: studentName, color: color}
+    const newStudentData = {openWorksheets: [], type: "student", name: studentName, color: color, notes: "", notesCopied: false}
     //Add newStudentData as second to last student in openStudents
     let newOpenStudents = [...useSessionStateStore.getState().openStudents];
     newOpenStudents.splice(newOpenStudents.length - 1, 0, newStudentData);
@@ -230,7 +230,8 @@ const useSessionStateStore = create( (set)=> ({
       openStudents: sessionState.openStudents,
       currentPage: sessionState.currentPage,
       currentWorksheet: sessionState.currentWorksheet,
-      currentPageOfWorksheet: sessionState.currentPageOfWorksheet
+      currentPageOfWorksheet: sessionState.currentPageOfWorksheet,
+      numberInNameOfLastStudentAdded: sessionState.numberInNameOfLastStudentAdded
     }
     localStorage.setItem("sessionState", JSON.stringify(partialSessionState))
   },
@@ -244,7 +245,8 @@ const useSessionStateStore = create( (set)=> ({
         openStudents: partialSessionState.openStudents,
         currentPage: partialSessionState.currentPage,
         currentWorksheet: partialSessionState.currentWorksheet,
-        currentPageOfWorksheet: partialSessionState.currentPageOfWorksheet
+        currentPageOfWorksheet: partialSessionState.currentPageOfWorksheet,
+        numberInNameOfLastStudentAdded: partialSessionState.numberInNameOfLastStudentAdded
       }) )
     }
   }

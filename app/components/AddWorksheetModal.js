@@ -299,6 +299,7 @@ function SearchBar(){
         value={searchInputValue}
         onChange={handleInputChange}
         id="searchInput"
+        autoComplete="off"
       />
       <CloseButton iconWidthString="14px" color="black" onClickFunction={onClearClick} additionalStyleObject={clearButtonStyle} />
     </div>
@@ -595,7 +596,7 @@ function addWorksheetToStudent(worksheetId, closeAddWorksheetModal){
   let newCurrentPage = null;
   if(indexOfThisWorksheetInOpenWorksheets == null){
     newCurrentPage = (useUserSettingsStore.getState().pageView == "single") ? 1 : 0
-    student.openWorksheets.push({"id": worksheetId, pageLeftOff: newCurrentPage})
+    student.openWorksheets.push({"id": worksheetId, pageLeftOff: newCurrentPage, notes: ""})
     indexOfWorksheetToFocus = student.openWorksheets.length - 1
     // console.log("didn't find worksheet so added it")
   } else {

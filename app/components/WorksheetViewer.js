@@ -499,24 +499,45 @@ function PagePanelFooter(){
 
 function NotesAboutWorksheetTextArea(){
   //Get current worksheet ID
-  const { getCurrentWorksheetID } = useSessionStateStore.getState()
+  const currentWorksheet = useSessionStateStore( (state) => state.currentWorksheet )
+  const openStudents = useSessionStateStore( (state) => state.openStudents )
+  const getCurrentWorksheetID = useSessionStateStore( (state) => state.getCurrentWorksheetID )
   const currentWorksheetID = getCurrentWorksheetID()
-  useSessionStateStore( (state) => state.currentWorksheet ) //This line is just to trigger rerenders
+  if(currentWorksheetID == null)return null;
+  let currentWorksheetNotes = openStudents[ currentWorksheet.openStudentIndex ].openWorksheets[ currentWorksheet.worksheetIndex ].notes
+  
+  function onChange(event){
+    const openStudentsCopy = [...openStudents]
+    openStudentsCopy[ currentWorksheet.openStudentIndex ].openWorksheets[ currentWorksheet.worksheetIndex ].notes = event.target.value
+    useSessionStateStore.getState().setOpenStudents( openStudentsCopy )
+  }
+  
+  function onKeyDown(event){
+    if(event.key == "Enter" ){
+      document.getElementById("notes-about-worksheet-text-area").blur()
+    }
+  }
+  
   
   return (<input type="text" 
     style={{
       width: "100%",
+      maxWidth: "500px",
       height: "100%",
       border: "1px solid #A9A09E",
-      borderRadius: "200px",
+      borderRadius: "8px",
       paddingLeft: "22px",
       boxSizing: "border-box",
       resize: "none",
       fontSize: "12px",
-      fontFamily: "Roboto, sans-serif"
+      fontFamily: "Roboto, sans-serif",
     }}
     placeholder={`Notes for ${currentWorksheetID}...`}
-    value={"something"}
+    value={ currentWorksheetNotes }
+    onChange = { onChange }
+    onKeyDown = { onKeyDown }
+    id="notes-about-worksheet-text-area"
+    autoComplete="off"
   ></input>)
 }
 
@@ -751,7 +772,7 @@ function StudentSessionCardHeader({studentName, index}){
   
   let headerStyle = {
     display: "flex",
-    justifyContent: "space-between",
+    // justifyContent: "space-between",
     alignItems: "center",
     backgroundColor: madisonModeActive ? "#1ab0cb" : constants.redColor,
     padding: "6px 10px",
@@ -766,11 +787,14 @@ function StudentSessionCardHeader({studentName, index}){
   let nameStyle = {
     margin: 0,
     whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
     color: "white",
     fontWeight: "normal",
-    fontSize: "12px"
+    fontSize: "12px",
+    userSelect: "none",
+    cursor: "pointer",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    overflow: "hidden"
   }
   
   let studentColorIndicatorCircleStyle = {
@@ -781,6 +805,14 @@ function StudentSessionCardHeader({studentName, index}){
     marginRight: "10px"
   }
   
+  let containerStyle = {
+    display: "flex",
+    alignItems: "center",
+    // width: "100%",
+    flexGrow: 1,
+    containerType: "size"
+  }
+  
   if(student.type == "other"){
     studentColorIndicatorCircleStyle.backgroundColor = "#00000000"
     headerStyle.backgroundColor = "white"
@@ -789,12 +821,11 @@ function StudentSessionCardHeader({studentName, index}){
     headerStyle["--original-bg-color"] = "rgb(223, 223, 223)"
     headerStyle["--pulsate-bg-color"] = "white"
     nameStyle.color = "black"
+    delete nameStyle.cursor
+    containerStyle = null
+    
   }
   
-  const containerStyle = {
-    display: "flex",
-    alignItems: "center"
-  }
   
   const onCloseClick = () => {
     const { deleteOpenStudent } = useSessionStateStore.getState()
@@ -814,7 +845,8 @@ function StudentSessionCardHeader({studentName, index}){
   }
   
   let closeButtonOrSubstitute = <CloseButton buttonWidthString="24px" iconWidthString="14px" color="white" onClickFunction={onCloseClick} />
-  let copyStudentDataButtonOrSubstitute = <CopyStudentDataButton index={index} />
+  let studentNotesHaveBeenCopied = openStudents[index].notesCopied
+  let copyStudentDataButtonOrSubstitute = <CopyStudentDataButton index={index} hasCopied={studentNotesHaveBeenCopied} />
   if(userIsMovingCurrentWorksheet){
     closeButtonOrSubstitute = <div style={{width: "24px", height: "24px"}}></div> //empty div
     copyStudentDataButtonOrSubstitute = <div style={{width: "24px", height: "24px"}}></div> //empty div
@@ -823,19 +855,30 @@ function StudentSessionCardHeader({studentName, index}){
     closeButtonOrSubstitute = null
     copyStudentDataButtonOrSubstitute = null
   }
+  
+  let onNameClick = function(){
+    let newName = prompt(`Enter new name for ${student.name}:`)
+    if(newName === null)return
+    if(newName.trim().length > 0){
+      let newOpenStudents = [...openStudents]
+      newOpenStudents[index].name = newName
+      useSessionStateStore.getState().setOpenStudents(newOpenStudents)
+    }
+  }
   return (
     <div style={headerStyle}
     className={  userIsMovingCurrentWorksheet ? "pulsatingHeader" : null  }
     onClick = { userIsMovingCurrentWorksheet ? moveWorksheetToThisStudent : null }
     >
-      <div style={containerStyle}>
-        { (student.type == "other") ? null : <div style={studentColorIndicatorCircleStyle}></div>}
-        <h1 style={nameStyle}>{studentName}</h1>
-      </div>
-      <div style={containerStyle}>
+      <div style={containerStyle} className="left-container-for-student-header">
+        {/* { (student.type == "other") ? null : <div style={studentColorIndicatorCircleStyle}></div>} */}
         {
           copyStudentDataButtonOrSubstitute
         }
+        <h1 style={nameStyle} onClick={ (student.type == "other") ? null : onNameClick }>{studentName}</h1>
+      </div>
+      <div style={{ display: "flex", alignItems: "center" }}>
+        
         {
           closeButtonOrSubstitute
         }
@@ -866,26 +909,9 @@ function StudentSessionCardFooter({ index, studentIsOther }){
     justifyContent: "center"
   }
   
-  let notesTextArea = (<textarea 
-    style={{
-      width: "100%",
-      height: "40px",
-      border: "1px solid #A9A09E",
-      borderRadius: "8px",
-      padding: "4px",
-      boxSizing: "border-box",
-      resize: "none",
-      fontSize: "12px",
-      fontFamily: "Roboto, sans-serif"
-    }}
-    placeholder="Notes..."
-  ></textarea>)
-  
-  if(studentIsOther)notesTextArea = null
-  
   return (
     <div style={ {padding: "10px 6px", paddingTop: "0px"} }>
-      { notesTextArea }
+      <StudentNotesTextArea index={index} studentIsOther={studentIsOther} />
       <div style={footerStyle}>
         <TimerStartButton styleObject={circularButtonStyle} index={index} />
         <AddWorksheetButton styleObject={circularButtonStyle} index={index} />
@@ -894,9 +920,46 @@ function StudentSessionCardFooter({ index, studentIsOther }){
   )
 }
 
-function CopyStudentDataButton({ index}){
+function StudentNotesTextArea({ index, studentIsOther }){
+  const openStudents = useSessionStateStore( (state) => state.openStudents )
+  if(studentIsOther)return null
+  
+  const onChange = function(event){
+    const openStudentsCopy = [...openStudents]
+    openStudentsCopy[index].notes = event.target.value
+    useSessionStateStore.getState().setOpenStudents( openStudentsCopy )
+  }
+  
+  // const onKeyDown = function(event){
+  //   if(event.key == "Enter"){
+  //     document.getElementsByClassName("notes-text-area")[index].blur()
+  //   }
+  // }
+  
+  const notesTextAreaStyle = {
+    width: "100%",
+    height: "40px",
+    border: "1px solid #A9A09E",
+    borderRadius: "8px",
+    padding: "4px",
+    boxSizing: "border-box",
+    resize: "none",
+    fontSize: "12px",
+    fontFamily: "Roboto, sans-serif"
+  }
+  return (<textarea 
+    style={notesTextAreaStyle}
+    placeholder="Notes..."
+    value={openStudents[index].notes}
+    onChange={ onChange }
+    className="notes-text-area"
+    // onKeyDown={ onKeyDown }
+  ></textarea>)
+}
+
+function CopyStudentDataButton({ index, hasCopied }){
   const onClick = function(){
-    console.log("clicked copy " + index)
+    copyStudentData( index )
   }
   const copyStudentDataButtonStyle = {
     width: "24px",
@@ -914,12 +977,43 @@ function CopyStudentDataButton({ index}){
     marginRight: "5px",
     border: "none"
   }
+  
+  const imgFile = hasCopied ? "copied.svg" : "copy.svg"
+  
   return (
     <button style={copyStudentDataButtonStyle} onClick={onClick}>
-      <img src={`${constants.iconsFolderPath}/copy.svg`} alt="Copy" style={{width: "14px", height: "14px"}}/>
+      <img src={`${constants.iconsFolderPath}/${imgFile}`} alt="Copy" style={{width: "14px", height: "14px"}}/>
     </button>
     
   )
+}
+
+function copyStudentData( index ){
+  let stringToCopy = ""
+  const { openStudents } = useSessionStateStore.getState()
+  const student = openStudents[index]
+  for(let i = 0; i < student.openWorksheets.length; i++){
+    let worksheetString = student.openWorksheets[i].id.replace(/ WS$/, "")
+    if(student.openWorksheets[i].notes.length > 0)worksheetString += ` (${student.openWorksheets[i].notes})`
+    if(i > 0)worksheetString = "__" + worksheetString
+    stringToCopy += worksheetString
+  }
+  if(student.notes.length > 0){
+    stringToCopy += `>>${student.notes}`
+  }
+  
+  if(stringToCopy.length == 0){
+    alert("No data to copy.")
+    return
+  }
+  
+  navigator.clipboard.writeText(stringToCopy).then(() => {
+    alert(`Copied ${student.name}'s data to your clipboard.`)
+  })
+  
+  let newOpenStudents = [...openStudents]
+  newOpenStudents[index].notesCopied = true
+  useSessionStateStore.getState().setOpenStudents(newOpenStudents)
 }
 
 function StudentSessionCardWorksheetList({ index }){
@@ -1043,7 +1137,6 @@ function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
   )
 }
 
-
 // function MoveWorksheetButton(){
 //   const moveWorksheetButtonStyle = {
 //     background: "none",
@@ -1123,8 +1216,8 @@ function AddStudentButton(){
     if(openStudents.length == 1){
       numberInName = "1"
     }
-    useSessionStateStore.getState().addOpenStudentToBottom("Student " + numberInName, color)
     useSessionStateStore.setState( (state) => ({ numberInNameOfLastStudentAdded: numberInName }) )
+    useSessionStateStore.getState().addOpenStudentToBottom("Student " + numberInName, color)
     
   }
   return (
