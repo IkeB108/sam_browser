@@ -1,21 +1,14 @@
 {
   "app\\page.js -> eruda": {
-    "id": 9651,
+    "id": "app\\page.js -> eruda",
     "files": [
-      "static/chunks/e53f5c71.522c09945412780b.js",
-      "static/chunks/558.ad4a5df6678f8084.js"
+      "static/chunks/_app-pages-browser_node_modules_pnpm_eruda_3_4_1_node_modules_eruda_eruda_js.js"
     ]
   },
-  "node_modules\\.pnpm\\next@15.1.6_react-dom@19.0.0_react@19.0.0__react@19.0.0\\node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
-    "id": 8153,
+  "node_modules\\.pnpm\\next@15.1.6_react-dom@19.0.0_react@19.0.0__react@19.0.0\\node_modules\\next\\dist\\client\\components\\react-dev-overlay\\internal\\helpers\\use-websocket.js -> @vercel/turbopack-ecmascript-runtime/browser/dev/hmr-client/hmr-client.ts": {
+    "id": "node_modules\\.pnpm\\next@15.1.6_react-dom@19.0.0_react@19.0.0__react@19.0.0\\node_modules\\next\\dist\\client\\components\\react-dev-overlay\\internal\\helpers\\use-websocket.js -> @vercel/turbopack-ecmascript-runtime/browser/dev/hmr-client/hmr-client.ts",
     "files": [
-      "static/chunks/153.c5987c3c3432562a.js"
-    ]
-  },
-  "node_modules\\.pnpm\\next@15.1.6_react-dom@19.0.0_react@19.0.0__react@19.0.0\\node_modules\\next\\dist\\client\\index.js -> ../pages/_error": {
-    "id": 2696,
-    "files": [
-      "static/chunks/696.de6f179f5e4e461f.js"
+      "static/chunks/_app-pages-browser_node_modules_pnpm_next_15_1_6_react-dom_19_0_0_react_19_0_0__react_19_0_0_-7a37e2.js"
     ]
   }
 }

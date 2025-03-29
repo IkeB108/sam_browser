@@ -1,7 +1,7 @@
 import constants from "../constants.js"
 import { create } from "zustand"
 import { CloseButton, GenericPillButton } from "../constants.js"
-import { useAllStudentsStore, useSessionStateStore, useUserSettingsStore, worksheets } from "../page.js"
+import { useSessionStateStore, useUserSettingsStore, worksheets } from "../page.js"
 import { useUserJustClickedMoveStore, useStatusMessageStore, useAWorksheetProcessIsBusyStore, useAddWorksheetModalIsOpenStore, useUserHasPinchZoomedStore } from "../stores.js"
 import { AddWorksheetModal } from "./AddWorksheetModal.js"
 import { useEffect, useRef } from "react"
@@ -350,8 +350,8 @@ function PagePanelFooter(){
     paddingTop: "16px",
     // border: "1px solid blue",
     display: "flex",
-    gap: "8px",
-    justifyContent: "space-between"
+    // gap: "8px",
+    // justifyContent: "space-between"
   }
   
   const togglePageView = function(){
@@ -477,6 +477,8 @@ function PagePanelFooter(){
   const footerSegmentStyle = {
     display: "flex",
     gap: "8px",
+    flexGrow: 1,
+    marginRight: "8px"
   }
   return (
     <div style={pagePanelFooterStyle}>
@@ -485,14 +487,37 @@ function PagePanelFooter(){
         { togglePageViewButton }
         { togglePageVisibilityButton }
         { moveButton }
-        { /* logWorksheetButton */ }
+        { (typeof currentWorksheetID == null) ? null : <NotesAboutWorksheetTextArea /> }
       </div>
-      <div style={footerSegmentStyle}>
+      <div style={{display: "flex", gap: "8px"}}>
         { prevPageButton }
         { nextPageButton }
       </div>
     </div>
   )
+}
+
+function NotesAboutWorksheetTextArea(){
+  //Get current worksheet ID
+  const { getCurrentWorksheetID } = useSessionStateStore.getState()
+  const currentWorksheetID = getCurrentWorksheetID()
+  useSessionStateStore( (state) => state.currentWorksheet ) //This line is just to trigger rerenders
+  
+  return (<input type="text" 
+    style={{
+      width: "100%",
+      height: "100%",
+      border: "1px solid #A9A09E",
+      borderRadius: "200px",
+      paddingLeft: "22px",
+      boxSizing: "border-box",
+      resize: "none",
+      fontSize: "12px",
+      fontFamily: "Roboto, sans-serif"
+    }}
+    placeholder={`Notes for ${currentWorksheetID}...`}
+    value={"something"}
+  ></input>)
 }
 
 function PageContainer( {isLeftOrRight} ){
@@ -638,8 +663,8 @@ function WorksheetSelectionPanel(){
       }}>
       <div style={worksheetSelectionPanelStyle}>
         {
-          openStudents.map( (studentData, index) => {
-            return <StudentSessionCard index={index} key={studentData.studentIDNumber + "_" + index} studentIDNumber={studentData.studentIDNumber} />
+          openStudents.map( (student, index) => {
+            return <StudentSessionCard index={index} key={index} />
           } )
         }
         <AddStudentButton />
@@ -690,14 +715,10 @@ function WorksheetSelectionPanelFooter(){
   )
 }
 
-function StudentSessionCard({studentIDNumber, index}){
-  const { allStudents } = useAllStudentsStore.getState();
-  let student;
-  if(studentIDNumber == "other"){
-    student = {"name": "Other", "color": "none"}
-  } else {
-    student = allStudents[studentIDNumber]
-  }
+function StudentSessionCard({index}){
+  const openStudents = useSessionStateStore( (state) => state.openStudents )
+  let student = openStudents[index]
+  let studentIsOther = ( student.type == "other" )
   const studentSessionCardStyle = {
     width: "100%",
     backgroundColor: "white",
@@ -710,43 +731,216 @@ function StudentSessionCard({studentIDNumber, index}){
     position: "relative",
   }
   
-  if(studentIDNumber == "other"){
+  if(student.type == "other"){
     studentSessionCardStyle.border = "1px solid #eeeeee"
   }
   
   return (
     <div style={studentSessionCardStyle}>
-      <StudentSessionCardHeader index={index} studentName={student.name} studentIDNumber={studentIDNumber} />
-      <StudentSessionCardWorksheetList studentIDNumber={studentIDNumber} />
-      <StudentSessionCardFooter studentIDNumber={studentIDNumber} index={index} />
+      <StudentSessionCardHeader index={index} studentName={student.name} />
+      <StudentSessionCardWorksheetList index={index} />
+      <StudentSessionCardFooter index={index} studentIsOther={studentIsOther} />
     </div>
   )
 }
 
-function getStudentFromOpenStudents(studentIDNumber){
-  const openStudents = useSessionStateStore.getState().openStudents;
-  const thisStudent = openStudents.filter( (student)=> student.studentIDNumber == studentIDNumber )[0]
-  const thisStudentIndex = openStudents.findIndex( (student)=> student.studentIDNumber == studentIDNumber )
-  return { thisStudent, thisStudentIndex }
+function StudentSessionCardHeader({studentName, index}){
+  const { userIsMovingCurrentWorksheet, openStudents, currentWorksheet } = useSessionStateStore.getState()
+  const madisonModeActive = useUserSettingsStore( (state) => state.madisonMode )
+  let student = openStudents[index]
+  
+  let headerStyle = {
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center",
+    backgroundColor: madisonModeActive ? "#1ab0cb" : constants.redColor,
+    padding: "6px 10px",
+    "--original-bg-color": constants.redColor,
+    "--pulsate-bg-color": "#eb9286",
+  }
+  
+  if(userIsMovingCurrentWorksheet){
+    headerStyle.cursor = "pointer"
+  }
+
+  let nameStyle = {
+    margin: 0,
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    color: "white",
+    fontWeight: "normal",
+    fontSize: "12px"
+  }
+  
+  let studentColorIndicatorCircleStyle = {
+    width: "18px",
+    height: "18px",
+    borderRadius: "50%",
+    backgroundColor: constants.colorMap[student.color],
+    marginRight: "10px"
+  }
+  
+  if(student.type == "other"){
+    studentColorIndicatorCircleStyle.backgroundColor = "#00000000"
+    headerStyle.backgroundColor = "white"
+    headerStyle.justifyContent = "center"
+    headerStyle.padding = "10px 0px"
+    headerStyle["--original-bg-color"] = "rgb(223, 223, 223)"
+    headerStyle["--pulsate-bg-color"] = "white"
+    nameStyle.color = "black"
+  }
+  
+  const containerStyle = {
+    display: "flex",
+    alignItems: "center"
+  }
+  
+  const onCloseClick = () => {
+    const { deleteOpenStudent } = useSessionStateStore.getState()
+    deleteOpenStudent(index)
+  }
+  
+  const moveWorksheetToThisStudent = function(){
+    const thisStudentIndex = index
+    const { setOpenStudents, setCurrentWorksheet } = useSessionStateStore.getState()
+    if(thisStudentIndex !== currentWorksheet.openStudentIndex){
+      let newOpenStudents = [...openStudents]
+      newOpenStudents[thisStudentIndex].openWorksheets.push( openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex] )
+      openStudents[currentWorksheet.openStudentIndex].openWorksheets.splice(currentWorksheet.worksheetIndex, 1)
+      setOpenStudents(newOpenStudents)
+      setCurrentWorksheet(thisStudentIndex, newOpenStudents[thisStudentIndex].openWorksheets.length - 1)
+    }
+  }
+  
+  let closeButtonOrSubstitute = <CloseButton buttonWidthString="24px" iconWidthString="14px" color="white" onClickFunction={onCloseClick} />
+  let copyStudentDataButtonOrSubstitute = <CopyStudentDataButton index={index} />
+  if(userIsMovingCurrentWorksheet){
+    closeButtonOrSubstitute = <div style={{width: "24px", height: "24px"}}></div> //empty div
+    copyStudentDataButtonOrSubstitute = <div style={{width: "24px", height: "24px"}}></div> //empty div
+  }
+  if(student.type == "other"){
+    closeButtonOrSubstitute = null
+    copyStudentDataButtonOrSubstitute = null
+  }
+  return (
+    <div style={headerStyle}
+    className={  userIsMovingCurrentWorksheet ? "pulsatingHeader" : null  }
+    onClick = { userIsMovingCurrentWorksheet ? moveWorksheetToThisStudent : null }
+    >
+      <div style={containerStyle}>
+        { (student.type == "other") ? null : <div style={studentColorIndicatorCircleStyle}></div>}
+        <h1 style={nameStyle}>{studentName}</h1>
+      </div>
+      <div style={containerStyle}>
+        {
+          copyStudentDataButtonOrSubstitute
+        }
+        {
+          closeButtonOrSubstitute
+        }
+      </div>
+    </div>
+  )
 }
 
-function StudentSessionCardWorksheetList({ studentIDNumber }){
-  const {allStudents} = useAllStudentsStore.getState()
+function StudentSessionCardFooter({ index, studentIsOther }){
+  const footerStyle = {
+    backgroundColor: "none",
+    // padding: "14px 14px",
+    // paddingTop: "0px",
+    justifyContent: "space-between",
+    alignItems: "center",
+    display: "flex"
+  }
+  const circularButtonStyle = {
+    backgroundColor: "white",
+    border: `2px solid ${constants.softBorderColor}`,
+    borderRadius: "50%",
+    cursor: "pointer",
+    width: "40px",
+    height: "40px",
+    verticalAlign: "middle",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center"
+  }
+  
+  let notesTextArea = (<textarea 
+    style={{
+      width: "100%",
+      height: "40px",
+      border: "1px solid #A9A09E",
+      borderRadius: "8px",
+      padding: "4px",
+      boxSizing: "border-box",
+      resize: "none",
+      fontSize: "12px",
+      fontFamily: "Roboto, sans-serif"
+    }}
+    placeholder="Notes..."
+  ></textarea>)
+  
+  if(studentIsOther)notesTextArea = null
+  
+  return (
+    <div style={ {padding: "10px 6px", paddingTop: "0px"} }>
+      { notesTextArea }
+      <div style={footerStyle}>
+        <TimerStartButton styleObject={circularButtonStyle} index={index} />
+        <AddWorksheetButton styleObject={circularButtonStyle} index={index} />
+      </div>
+    </div>
+  )
+}
+
+function CopyStudentDataButton({ index}){
+  const onClick = function(){
+    console.log("clicked copy " + index)
+  }
+  const copyStudentDataButtonStyle = {
+    width: "24px",
+    height: "24px",
+    backgroundColor: "#00000000",
+    // border: "1px solid #8C2B1E",
+    // borderRadius: "5px",
+    cursor: "pointer",
+    padding: "0px",
+    verticalAlign: "middle",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxSizing: "border-box",
+    marginRight: "5px",
+    border: "none"
+  }
+  return (
+    <button style={copyStudentDataButtonStyle} onClick={onClick}>
+      <img src={`${constants.iconsFolderPath}/copy.svg`} alt="Copy" style={{width: "14px", height: "14px"}}/>
+    </button>
+    
+  )
+}
+
+function StudentSessionCardWorksheetList({ index }){
   const {openStudents, currentWorksheet} = useSessionStateStore()
+  const thisStudent = openStudents[index]
+  const thisStudentIndex = index
   
   const worksheetListStyle = {
     display: "flex",
     flexDirection: "column",
-    padding: "10px 4px",
+    paddingTop: "10px",
+    paddingBottom: "10px",
+    paddingLeft: "6px",
+    paddingRight: "6px",
     overflowY: "auto",
     height: "100%"
   }
   
-  if(studentIDNumber == "other"){
+  if(thisStudent.type == "other"){
     worksheetListStyle.paddingTop = "0px"
   }
-  
-  const {thisStudent, thisStudentIndex} = getStudentFromOpenStudents(studentIDNumber)
   
   let worksheetList = []
   
@@ -890,38 +1084,7 @@ function onMoveWorksheetClick(){
   setUserIsMovingCurrentWorksheet( !userIsMovingCurrentWorksheet )
 }
 
-function StudentSessionCardFooter({ studentIDNumber, index }){
-  const footerStyle = {
-    backgroundColor: "none",
-    padding: "14px 14px",
-    paddingTop: "0px",
-    justifyContent: "space-between",
-    alignItems: "center",
-    display: "flex"
-  }
-  const circularButtonStyle = {
-    backgroundColor: "white",
-    border: `2px solid ${constants.softBorderColor}`,
-    borderRadius: "50%",
-    cursor: "pointer",
-    width: "40px",
-    height: "40px",
-    verticalAlign: "middle",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
-  }
-  
-  
-  return (
-    <div style={footerStyle}>
-      <TimerStartButton styleObject={circularButtonStyle} studentIDNumber={studentIDNumber} />
-      <AddWorksheetButton styleObject={circularButtonStyle} studentIDNumber={studentIDNumber} index={index} />
-    </div>
-  )
-}
-
-function TimerStartButton({ studentIDNumber, styleObject }){
+function TimerStartButton({ styleObject }){
   return (
     <button style={styleObject}>
       <img src={constants.iconsFolderPath + "/timer.svg"} alt="Start timer" style={{ width: "23px", height: "23px" }} />
@@ -929,10 +1092,9 @@ function TimerStartButton({ studentIDNumber, styleObject }){
   )
 }
 
-function AddWorksheetButton({ studentIDNumber, styleObject, index }){
+function AddWorksheetButton({ styleObject, index }){
   const onClick = function(){
     useAddWorksheetModalIsOpenStore.getState().setAddWorksheetModalIsOpen(true)
-    useAddWorksheetModalIsOpenStore.getState().setStudentAddingFor(studentIDNumber)
     useAddWorksheetModalIsOpenStore.getState().setIndexOfStudentAddingFor(index)
   }
   return (
@@ -943,151 +1105,33 @@ function AddWorksheetButton({ studentIDNumber, styleObject, index }){
 }
 
 function AddStudentButton(){
-  const idOfLastStudentAdded = useSessionStateStore(  (state) => state.idOfLastStudentAdded )
-  const tooManyStudents = idOfLastStudentAdded == "99" ? true : false
+  // const idOfLastStudentAdded = useSessionStateStore(  (state) => state.idOfLastStudentAdded )
+  // const tooManyStudents = idOfLastStudentAdded == "99" ? true : false
   const onClick = function(){
-    if(tooManyStudents){
-      const confirmRestart = window.confirm("You have added the maximum number of students. Would you like to clear and restart the session?")
-      if(confirmRestart){
-        useSessionStateStore.getState().setOpenStudents(
-          // [
-          //   {"openWorksheets": [], "studentIDNumber": "1"},
-          //   {"openWorksheets": [], "studentIDNumber": "2"},
-          //   {"openWorksheets": [], "studentIDNumber": "3"},
-          //   {"openWorksheets": [], "studentIDNumber": "other"}
-          // ]
-            [ {"openWorksheets": [], "studentIDNumber": "other"} ]
-        )
-        useSessionStateStore.setState( (state) => ({ idOfLastStudentAdded: "0" }) )
-        useSessionStateStore.getState().setCurrentWorksheet(null, null)
-      }
-      return
-    }
     
     //currentWorksheet is defined by the index of the open student, so if a new student
     //is added above the "other" student card, the openStudentIndex will be offset by one. This corrects that
-    const { currentWorksheet, openStudents } = useSessionStateStore.getState()
+    const { currentWorksheet, openStudents, numberInNameOfLastStudentAdded } = useSessionStateStore.getState()
     if( currentWorksheet.openStudentIndex == openStudents.length - 1 ){
       useSessionStateStore.getState().setCurrentWorksheet(openStudents.length, 0)
       console.log( openStudents.length - 1 )
     }
     
-    let nextStudentID = ( Number(idOfLastStudentAdded) ) % 99 + 1
-    nextStudentID = nextStudentID.toString()
+    let numberInName = Number(numberInNameOfLastStudentAdded) + 1
+    let color = "green"
+    numberInName = numberInName.toString()
     if(openStudents.length == 1){
-      nextStudentID = "1"
+      numberInName = "1"
     }
-    useSessionStateStore.getState().addOpenStudentToBottom(nextStudentID)
-    useSessionStateStore.setState( (state) => ({ idOfLastStudentAdded: nextStudentID }) )
+    useSessionStateStore.getState().addOpenStudentToBottom("Student " + numberInName, color)
+    useSessionStateStore.setState( (state) => ({ numberInNameOfLastStudentAdded: numberInName }) )
     
   }
   return (
-    <GenericPillButton useOnClick={true} isFilled={true} isShort={true} functionToTrigger={onClick} additionalStyleObject={{margin: "0 auto", paddingLeft: "15px", paddingRight: "15px"}} >
+    <GenericPillButton useOnClick={true} isFilled={true} isShort={true} functionToTrigger={onClick} additionalStyleObject={{margin: "0 auto", paddingLeft: "15px", paddingRight: "15px"}} id="add-student-button">
       <img src={constants.iconsFolderPath + "/add_white.svg"} alt="Add student" style={{ width: "12px", height: "12px", marginRight: "8px" }}/>
       <p style={{margin: "0", padding: "0"}}>Add Student</p>
     </GenericPillButton>
-  )
-}
-
-function StudentSessionCardHeader({studentName, studentIDNumber, index}){
-  const { allStudents } = useAllStudentsStore.getState();
-  const { userIsMovingCurrentWorksheet, openStudents, currentWorksheet } = useSessionStateStore.getState()
-  const madisonModeActive = useUserSettingsStore( (state) => state.madisonMode )
-  let student;
-  if(studentIDNumber == "other"){
-    student = { "name": "Other", "color": "none" }
-  } else {
-    student = allStudents[studentIDNumber]
-  }
-  
-  let headerStyle = {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    backgroundColor: madisonModeActive ? "#1ab0cb" : constants.redColor,
-    padding: "6px 10px",
-    "--original-bg-color": constants.redColor,
-    "--pulsate-bg-color": "#eb9286",
-  }
-  
-  if(userIsMovingCurrentWorksheet){
-    headerStyle.cursor = "pointer"
-  }
-
-  let nameStyle = {
-    margin: 0,
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    color: "white",
-    fontWeight: "normal",
-    fontSize: "12px"
-  }
-  
-  let studentColorIndicatorCircleStyle = {
-    width: "18px",
-    height: "18px",
-    borderRadius: "50%",
-    backgroundColor: constants.colorMap[student.color],
-    marginRight: "10px"
-  }
-  
-  if(studentIDNumber == "other"){
-    studentColorIndicatorCircleStyle.backgroundColor = "#00000000"
-    headerStyle.backgroundColor = "white"
-    headerStyle.justifyContent = "center"
-    headerStyle.padding = "10px 0px"
-    headerStyle["--original-bg-color"] = "rgb(223, 223, 223)"
-    headerStyle["--pulsate-bg-color"] = "white"
-    nameStyle.color = "black"
-  }
-  
-  const leftAlignedContainerStyle = {
-    display: "flex",
-    alignItems: "center"
-  }
-  
-  const onCloseClick = () => {
-    const { deleteOpenStudent } = useSessionStateStore.getState()
-    deleteOpenStudent(studentIDNumber)
-  }
-  
-  const moveWorksheetToThisStudent = function(){
-    const { thisStudentIndex } = getStudentFromOpenStudents(studentIDNumber)
-    const { setOpenStudents, setCurrentWorksheet } = useSessionStateStore.getState()
-    if(thisStudentIndex !== currentWorksheet.openStudentIndex){
-      let newOpenStudents = [...openStudents]
-      newOpenStudents[thisStudentIndex].openWorksheets.push( openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex] )
-      openStudents[currentWorksheet.openStudentIndex].openWorksheets.splice(currentWorksheet.worksheetIndex, 1)
-      setOpenStudents(newOpenStudents)
-      setCurrentWorksheet(thisStudentIndex, newOpenStudents[thisStudentIndex].openWorksheets.length - 1)
-    }
-  }
-  
-  // const useCloseButton = (!userIsMovingCurrentWorksheet && studentIDNumber !== "other")
-  // const emptyDivToReplaceCloseButton = (
-  //   <div style={{width: "24px", height: "24px"}}></div>
-  // )
-  let closeButtonOrSubstitute = <CloseButton buttonWidthString="24px" iconWidthString="14px" color="white" onClickFunction={onCloseClick} />
-  if(userIsMovingCurrentWorksheet){
-    closeButtonOrSubstitute = <div style={{width: "24px", height: "24px"}}></div>
-  }
-  if(studentIDNumber == "other"){
-    closeButtonOrSubstitute = null
-  }
-  return (
-    <div style={headerStyle}
-    className={  userIsMovingCurrentWorksheet ? "pulsatingHeader" : null  }
-    onClick = { userIsMovingCurrentWorksheet ? moveWorksheetToThisStudent : null }
-    >
-      <div style={leftAlignedContainerStyle}>
-        { (studentIDNumber == "other") ? null : <div style={studentColorIndicatorCircleStyle}></div>}
-        <h1 style={nameStyle}>{studentName}</h1>
-      </div>
-      {
-        closeButtonOrSubstitute
-      }
-    </div>
   )
 }
 

@@ -1,7 +1,7 @@
 import { GenericModal, CloseButton, GenericPillButton, PressDownButton } from "../constants.js";
 import constants from "../constants.js";
 import { useAddWorksheetModalIsOpenStore } from "../stores"
-import { useSessionStateStore, useAllStudentsStore, useUserSettingsStore } from "../page.js"
+import { useSessionStateStore, useUserSettingsStore } from "../page.js"
 import {  useRef, useEffect } from "react";
 import { create } from "zustand";
 
@@ -147,15 +147,11 @@ export function AddWorksheetModal(){
     useAddWorksheetModalIsOpenStore.getState().setAddWorksheetModalIsOpen(false)
   }
   
-  const { studentAddingFor } = useAddWorksheetModalIsOpenStore.getState() //We don't need a hook here because this value won't change while modal is open
-  // ^ This value is student ID number.
-  let studentName
-  if(studentAddingFor == "other"){
-    studentName = "Other"
-  } else {
-    const { allStudents } = useAllStudentsStore.getState()
-    studentName = allStudents[studentAddingFor].name
-  }
+  const { indexOfStudentAddingFor } = useAddWorksheetModalIsOpenStore.getState() //We don't need a hook here because this value won't change while modal is open
+  // ^ This value is index of student in openStudents
+  const { openStudents } = useSessionStateStore.getState() //This will give us the list of students to get the name from  
+  const studentName = openStudents[indexOfStudentAddingFor].name
+  
   return (
     <GenericModal blockBehind={true} widthSetting="96%" heightSetting="96%" additionalStyleObject={{boxSizing: "border-box", display: "flex", flexDirection:"column", maxWidth: "1000px", maxHeight: "700px"}}>
       <div width="100%" style={{display: "flex", justifyContent: "space-between", alignItems: "center"}}> {/*Container for modal title and close button*/}

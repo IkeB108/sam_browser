@@ -33,46 +33,46 @@ To access the store outside a component, call myStoreHook.getState(). From there
 the store's properties and call the store's actions.
 
 */
-const createAllStudentsStore = function(set){ //Store initializer
-  /*Zustand passes a "set" function into here. We call "set"
-  to update any properties in the store. When we call "set", we pass "set"
-  a function which returns a "partial state", an object containing any of the properties of the store
-  we want to change.
-  We can optionally make that function take the previous state as a parameter.
-  */
-  const getAllStudentsFromLocalStorage = function(){
-    /*This function defines the logic for the initAllStudents action (see below).
-    This function doesn't require the previous state as a parameter.
-    This function returns a "partial state" which updates the "allStudents" property of the store.
-    */
-    let allStudentsInLocalStorage = localStorage.getItem("allStudents")
-    if(allStudentsInLocalStorage !== null){
-      //console.log("Found allStudents in local storage.")
-      return { allStudents: JSON.parse(allStudentsInLocalStorage) }
-    } else {
-      //console.log("Didn't find allStudents in local storage.")
-      return { allStudents: {} }
-    }
-  }
+// const createAllStudentsStore = function(set){ //Store initializer
+//   /*Zustand passes a "set" function into here. We call "set"
+//   to update any properties in the store. When we call "set", we pass "set"
+//   a function which returns a "partial state", an object containing any of the properties of the store
+//   we want to change.
+//   We can optionally make that function take the previous state as a parameter.
+//   */
+//   const getAllStudentsFromLocalStorage = function(){
+//     /*This function defines the logic for the initAllStudents action (see below).
+//     This function doesn't require the previous state as a parameter.
+//     This function returns a "partial state" which updates the "allStudents" property of the store.
+//     */
+//     let allStudentsInLocalStorage = localStorage.getItem("allStudents")
+//     if(allStudentsInLocalStorage !== null){
+//       //console.log("Found allStudents in local storage.")
+//       return { allStudents: JSON.parse(allStudentsInLocalStorage) }
+//     } else {
+//       //console.log("Didn't find allStudents in local storage.")
+//       return { allStudents: {} }
+//     }
+//   }
   
-  const setAllStudentsToValue = function( newValue ){
-    return { allStudents: newValue }
-  }
+//   const setAllStudentsToValue = function( newValue ){
+//     return { allStudents: newValue }
+//   }
   
-  return {
-    allStudents: {},
-    initAllStudents: ()=> { set(getAllStudentsFromLocalStorage) }, //Action
-    /*
-    The initAllStudents() action is called in HomePage(), when the HomePage component
-    is mounted for the first time. To do this, we use HomePage's useEffect() hook, pass in a function
-    that calls initAllStudents(), and also pass in an empty dependency array [], which tells React to only
-    run that function once when the component is mounted.
-    */
-   setAllStudents: (newValue) => { set( setAllStudentsToValue(newValue) ) },
-  }
-}
+//   return {
+//     allStudents: {},
+//     initAllStudents: ()=> { set(getAllStudentsFromLocalStorage) }, //Action
+//     /*
+//     The initAllStudents() action is called in HomePage(), when the HomePage component
+//     is mounted for the first time. To do this, we use HomePage's useEffect() hook, pass in a function
+//     that calls initAllStudents(), and also pass in an empty dependency array [], which tells React to only
+//     run that function once when the component is mounted.
+//     */
+//    setAllStudents: (newValue) => { set( setAllStudentsToValue(newValue) ) },
+//   }
+// }
 
-const useAllStudentsStore = create(createAllStudentsStore) //Returns a store hook
+// const useAllStudentsStore = create(createAllStudentsStore) //Returns a store hook
 
 //Filler data for debugging
 // const fillerStudentData = {
@@ -91,17 +91,17 @@ const useAllStudentsStore = create(createAllStudentsStore) //Returns a store hoo
 // }
 
 
-const fillerStudentData = {}
-if(true){
-  let colorCycle = "red orange yellow green cyan blue purple pink".split(" ")
-  for(let i = 1; i < 100; i ++){
-    fillerStudentData[i] = {
-      "name": "Student " + i,
-      "color": colorCycle[ (i-1) % colorCycle.length]
-    }
-  }
-}
-useAllStudentsStore.getState().setAllStudents(fillerStudentData)
+// const fillerStudentData = {}
+// if(true){
+//   let colorCycle = "red orange yellow green cyan blue purple pink".split(" ")
+//   for(let i = 1; i < 100; i ++){
+//     fillerStudentData[i] = {
+//       "name": "Student " + i,
+//       "color": colorCycle[ (i-1) % colorCycle.length]
+//     }
+//   }
+// }
+// useAllStudentsStore.getState().setAllStudents(fillerStudentData)
 
 const useSessionStateStore = create( (set)=> ({
   // openStudents: {
@@ -138,48 +138,47 @@ const useSessionStateStore = create( (set)=> ({
   //   {"openWorksheets": [], "studentIDNumber": "other"}
   // ],
   
-  openStudents: [ {"openWorksheets": [], "studentIDNumber": "other"} ],
+  openStudents: [
+    {openWorksheets: [], type: "student", name: "Student 1", color: "green"},
+    {openWorksheets: [], type: "student", name: "Student 2", color: "green"},
+    {openWorksheets: [], type: "student", name: "Student 3", color: "green"},
+    {openWorksheets: [], type: "other", name: "Other", color: "none"},
+  ],
+  numberInNameOfLastStudentAdded: 3,
   setOpenStudents: (newValue)=>{
     set( ()=>({ openStudents: newValue }) );
     useSessionStateStore.getState().saveToLocalStorage()
   },
-  deleteOpenStudent: (studentIDNumber)=>{
+  deleteOpenStudent: (indexInOpenStudents)=>{
     /*
     When deleting a student, we need to update the openStudentIndex of the currentWorksheet
     because the openStudents array will be shorter after the student is deleted.
-    To do this, we'll grab the student ID number of the student at openStudentIndex
-    and then use the student ID number to reset the openStudentIndex after deleting this student.
-    This works because there will never be two StudentSessionCards with the same student ID number.
+    To do this, we'll subtract one from the index of the currentWorksheet.openStudentIndex if
+    it is greater than the index of the student being deleted.
     */
-    
-    //Get the id number of the student at openStudentIndex
-    const { currentWorksheet, openStudents } = useSessionStateStore.getState()
-    let studentIDNumberOfOpenStudent = null //Set to null if no worksheet is open
-    if(currentWorksheet.openStudentIndex !== null){
-      studentIDNumberOfOpenStudent = openStudents[currentWorksheet.openStudentIndex].studentIDNumber
+    const indexOfStudentWithCurrentWorksheet = useSessionStateStore.getState().currentWorksheet.openStudentIndex
+    if(indexOfStudentWithCurrentWorksheet == indexInOpenStudents){
+      //If the student we're deleting is the student with the currently open worksheet, set to null
+      useSessionStateStore.getState().setCurrentWorksheet(null, null)
+    }
+    if(indexOfStudentWithCurrentWorksheet !== null && indexOfStudentWithCurrentWorksheet > indexInOpenStudents) {
+      // If the currentWorksheet's openStudentIndex is greater than the index of the student being deleted,
+      // decrement it by 1 to maintain the correct index in the openStudents array.
+      const newCurrentWorksheet = { ...useSessionStateStore.getState().currentWorksheet }
+      newCurrentWorksheet.openStudentIndex = indexOfStudentWithCurrentWorksheet - 1
+      set( ()=>({ currentWorksheet: newCurrentWorksheet }) )
     }
     
-    //Delete the student
-    let newOpenStudents = useSessionStateStore.getState().openStudents.filter( (student)=> student.studentIDNumber !== studentIDNumber )
-    set( ()=>({ openStudents: newOpenStudents }) )
     
-    if(studentIDNumberOfOpenStudent == null)return; //If no worksheet was open, don't do anything else
-    
-    //Use the id number to redefine the openStudentIndex
-    const newOpenStudentIndex = newOpenStudents.findIndex( (student)=> student.studentIDNumber === studentIDNumberOfOpenStudent )
-    //If newOpenStudentIndex is -1, that means that we just deleted the student at openStudentIndex
-    //So we need to set openStudentIndex to null
-    if(newOpenStudentIndex === -1){
-      set( ()=>({ currentWorksheet: { openStudentIndex: null, worksheetIndex: null } }) )
-    } else {
-      set( ()=>({ currentWorksheet: { openStudentIndex: newOpenStudentIndex, worksheetIndex: currentWorksheet.worksheetIndex } }) )
-    }
-    
+    // Delete the student at indexInOpenStudents from openStudents array
+    let newOpenStudents = [...useSessionStateStore.getState().openStudents];
+    newOpenStudents.splice(indexInOpenStudents, 1); //Remove the student at the specified index
+    set( ()=>({ openStudents: newOpenStudents }) );
     useSessionStateStore.getState().saveToLocalStorage()
+    
   },
-  addOpenStudentToBottom: (studentIDNumber)=>{
-    // let newOpenStudents = useSessionStateStore.getState().openStudents.concat()
-    const newStudentData = {"openWorksheets": [], "studentIDNumber": studentIDNumber}
+  addOpenStudentToBottom: (studentName, color)=>{
+    const newStudentData = {openWorksheets: [], type: "student", name: studentName, color: color}
     //Add newStudentData as second to last student in openStudents
     let newOpenStudents = [...useSessionStateStore.getState().openStudents];
     newOpenStudents.splice(newOpenStudents.length - 1, 0, newStudentData);
@@ -187,7 +186,6 @@ const useSessionStateStore = create( (set)=> ({
     
     useSessionStateStore.getState().saveToLocalStorage()
   },
-  idOfLastStudentAdded: "0",
   
   currentPage: "WorksheetViewer",
   setCurrentPage: (newValue)=>{
@@ -202,6 +200,7 @@ const useSessionStateStore = create( (set)=> ({
   getCurrentWorksheetID: ()=>{
     const { openStudents, currentWorksheet } = useSessionStateStore.getState()
     if(currentWorksheet.openStudentIndex === null || currentWorksheet.worksheetIndex === null) return null
+    
     return openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex].id
   },
   userIsMovingCurrentWorksheet: false,
@@ -229,7 +228,6 @@ const useSessionStateStore = create( (set)=> ({
     //Store only the following values in local storage
     const partialSessionState = {
       openStudents: sessionState.openStudents,
-      idOfLastStudentAdded: sessionState.idOfLastStudentAdded,
       currentPage: sessionState.currentPage,
       currentWorksheet: sessionState.currentWorksheet,
       currentPageOfWorksheet: sessionState.currentPageOfWorksheet
@@ -242,15 +240,8 @@ const useSessionStateStore = create( (set)=> ({
     if(sessionStateFromLocalStorage !== null){
       console.log("loading sessionstate from local storage")
       const partialSessionState = JSON.parse(sessionStateFromLocalStorage)
-      for(let i in partialSessionState.openStudents){
-        partialSessionState.openStudents[i].studentIDNumber = (Number(i) + 1).toString()
-        if(i == partialSessionState.openStudents.length - 1){
-          partialSessionState.openStudents[i].studentIDNumber = "other"
-        }
-      }
       set( ()=>({
         openStudents: partialSessionState.openStudents,
-        idOfLastStudentAdded: partialSessionState.idOfLastStudentAdded,
         currentPage: partialSessionState.currentPage,
         currentWorksheet: partialSessionState.currentWorksheet,
         currentPageOfWorksheet: partialSessionState.currentPageOfWorksheet
@@ -297,6 +288,12 @@ function HomePage() {
     //These event listeners get added every time the component is rerendered.
     //To prevent event listeners from accumulating, they get removed when the component unmounts
     //via the cleanup function that is returned below.
+    if(window.location.href.includes("?reset")){
+      //This is a fallback users can use for critical errors that persist after page reloads.
+      localStorage.clear()
+      window.location.href = window.location.href.replace("?reset", "")
+    }
+    
     window.visualViewport.addEventListener("resize", updateUserHasPinchZoomedOnResize)
     document.addEventListener("touchend", onDocumentTouchEndOrMouseUp)
     document.addEventListener("mouseup", onDocumentTouchEndOrMouseUp)
@@ -359,7 +356,6 @@ function HomePage() {
   */
   useEffect( ()=>{
     //useAllStudentsStore.getState().initAllStudents();
-    window.useAllStudentsStore = useAllStudentsStore; //call useAllStudentsStore.getState() when accessing in the dev console.
     window.useSessionStateStore = useSessionStateStore;
     window.useUserSettingsStore = useUserSettingsStore;
     
@@ -409,5 +405,5 @@ function updateUserHasPinchZoomedIfChanged( callAgainBoolean ){
   if(callAgainBoolean) setTimeout( updateUserHasPinchZoomedIfChanged(false), 1000 )
 }
 
-export { useAllStudentsStore, useSessionStateStore, useUserSettingsStore, worksheets }
+export { useSessionStateStore, useUserSettingsStore, worksheets }
 export default HomePage

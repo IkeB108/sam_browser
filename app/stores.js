@@ -26,8 +26,6 @@ export const useUserJustClickedMoveStore = create( (set) => ({
 export const useAddWorksheetModalIsOpenStore = create( (set)=> ({
   addWorksheetModalIsOpen: false,
   setAddWorksheetModalIsOpen: (newValue)=>{ set( ()=>({ addWorksheetModalIsOpen: newValue }) ) },
-  studentAddingFor: null, //string, student id number
-  setStudentAddingFor: (newValue)=>{ set( ()=>({ studentAddingFor: newValue }) ) },
   indexOfStudentAddingFor: null, //Index in openStudents in useSessionStateStore
   setIndexOfStudentAddingFor: (newValue)=>{ set( ()=>({ indexOfStudentAddingFor: newValue }) ) }
 }))
