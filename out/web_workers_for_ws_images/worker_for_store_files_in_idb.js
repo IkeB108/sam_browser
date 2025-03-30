@@ -29,7 +29,7 @@ self.onmessage = async function(event){
       worksheetCount ++
       if(worksheetCount % 39 == 0){
         useLoadingAnimation = true
-        latestStatusMessage = "Storing worksheet #" + worksheetCount + " on your browser's cache..."
+        latestStatusMessage = "Storing worksheets on your browser's cache..."
         // self.postMessage({
         //   "type": "status_update_from_web_worker",
         //   "content": "Storing worksheet #" + worksheetCount + " on your device..."
@@ -41,7 +41,7 @@ self.onmessage = async function(event){
       useLoadingAnimation = false
       self.postMessage({
         "type": "status_update_from_web_worker",
-        "content": "All worksheets stored: " + worksheetCount + " files"
+        "content": "All worksheets stored."
       })
       self.postMessage({
         "type": "confirm_transaction_complete",
