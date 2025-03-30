@@ -1,5 +1,8 @@
 'use client'
 //     ikeb108.github.io/sam_browser/out
+//     add ?eruda to the end of the URL to enable eruda console debugging
+//     add ?reset to the end of the URL to reset local storage (for fixing critical errors only--shouldn't be needed generally)
+//     add ?download to the end of the URL to download "worksheets" object (without pageBlobs) (shoudl be for development purposes only)
 import React, { useEffect } from 'react'
 import { create } from 'zustand'
 import WorksheetViewer from './components/WorksheetViewer.js'
@@ -7,7 +10,7 @@ import SettingsPage from './components/SettingsPage.js'
 import { retrieveWorksheetsFromIndexedDB, setStatusMessageOfWorksheetProcess } from "./components/SettingsPage.js"
 import { useUserHasPinchZoomedStore, useUserJustClickedMoveStore } from "./stores.js"
 import constants from "./constants.js"
-
+import { worksheets, retrieveWorksheet, getWorksheetsWithoutPageBlobs } from "./retrieveWorksheet.js"
 //Keys in allPages use PascalCasing to match the react component names
 const allPages = {
   "WorksheetViewer": <WorksheetViewer />,
@@ -195,6 +198,16 @@ const useSessionStateStore = create( (set)=> ({
   currentWorksheet: { openStudentIndex: null, worksheetIndex: null },
   setCurrentWorksheet: (openStudentIndex, worksheetIndex)=>{
     set( ()=>({ currentWorksheet: { openStudentIndex: openStudentIndex, worksheetIndex: worksheetIndex } }) )
+    /*
+    If worksheet hasn't been loaded in yet, load it from IDB.
+    */
+    if(worksheetIndex == null || openStudentIndex == null) return
+    const { openStudents } = useSessionStateStore.getState()
+    const worksheetID = openStudents[openStudentIndex].openWorksheets[worksheetIndex].id
+    if(worksheets[worksheetID] === undefined || worksheets[worksheetID].pageBlobs === undefined){
+      // console.log("Worksheet not found in global worksheets object. Loading from IDB.")
+      retrieveWorksheet(worksheetID)
+    }
     useSessionStateStore.getState().saveToLocalStorage()
   },
   getCurrentWorksheetID: ()=>{
@@ -241,7 +254,6 @@ const useSessionStateStore = create( (set)=> ({
   loadFromLocalStorage: () => {
     const sessionStateFromLocalStorage = localStorage.getItem("sessionState")
     if(sessionStateFromLocalStorage !== null){
-      console.log("loading sessionstate from local storage")
       const partialSessionState = JSON.parse(sessionStateFromLocalStorage)
       set( ()=>({
         openStudents: partialSessionState.openStudents,
@@ -250,6 +262,13 @@ const useSessionStateStore = create( (set)=> ({
         currentPageOfWorksheet: partialSessionState.currentPageOfWorksheet,
         numberInNameOfLastStudentAdded: partialSessionState.numberInNameOfLastStudentAdded
       }) )
+      //Load in whatever worksheet is currently open
+      //If a worksheet is selected, load the worksheet from IDB. This will automatically trigger a rerender of the pageContainer
+      const currentWorksheetID = useSessionStateStore.getState().getCurrentWorksheetID()
+      if(currentWorksheetID != null){
+        //Load the worksheet from IDB
+        retrieveWorksheet( currentWorksheetID )
+      }
     }
   }
 }))
@@ -280,8 +299,6 @@ function updateUserHasPinchZoomedOnResize(){
   //Otherwise, the user could trigger drag events while pinch zooming if it's zoomed all the way out.
 }
 
-const worksheets = {}
-
 function onDocumentPointerDown(event){
   const previousVal = useSessionStateStore.getState().lastPointerInputWasTouch
   if(event.pointerType == "touch"){
@@ -300,6 +317,8 @@ function HomePage() {
   //which will happen every time userHasPinchZoomed changes, which should be
   //at the start and end of pinch zoom gestures, but not in between.
   useEffect( ()=>{
+    window.retrieveWorksheet = retrieveWorksheet
+    window.worksheets = worksheets
     //These event listeners get added every time the component is rerendered.
     //To prevent event listeners from accumulating, they get removed when the component unmounts
     //via the cleanup function that is returned below.
@@ -318,7 +337,7 @@ function HomePage() {
     document.addEventListener("pointerdown", onDocumentPointerDown)
     updateUserHasPinchZoomedOnResize()
     
-    if(window.location.href.includes("?eruda=true")){
+    if(window.location.href.includes("?eruda")){
       /*
       Eruda is a module for adding virtual devtools to a webpage for mobile debugging.
       Eruda expects to be run in-browser, so it needs to be imported dynamically
@@ -380,8 +399,12 @@ function HomePage() {
     window.useSessionStateStore = useSessionStateStore;
     window.useUserSettingsStore = useUserSettingsStore;
     
-    //On page load, retrieve worksheets from IndexedDB if any. This function is imported from SettingsPage.js
-    retrieveWorksheetsFromIndexedDB()
+    getWorksheetsWithoutPageBlobs()
+    
+    if(window.location.href.includes("?download")){
+      //On page load, retrieve all worksheets from IndexedDB if any. This function is imported from SettingsPage.js
+      retrieveWorksheetsFromIndexedDB()
+    }
   }, [])
   /*
   The dependency array we pass into useEffect tells React which variables to look

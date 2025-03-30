@@ -36,8 +36,8 @@ function SettingsPage(){
       {/* { constants.CloseButton("18px", "9px", ()=>{ useSessionStateStore.getState().setCurrentPage("WorksheetViewer") }) } */}
       <UploadWorksheetImageDataButton />
       <br />
-      <RetrieveWorksheetImageDataButton />
-      <br />
+      {/* <RetrieveWorksheetImageDataButton />
+      <br /> */}
       <ClearWorksheetImageDataButton />
       <br />
       <MadisonModeButton />
@@ -71,7 +71,7 @@ function MadisonModeButton(){
   }
   return (
     <GenericPillButton isFilled={false} functionToTrigger={onClick}>
-      Madison & Yeju Mode: {madisonModeActive ? "ON" : "OFF"}
+      👭 Madison & Yeju Mode: {madisonModeActive ? "ON" : "OFF"}
     </GenericPillButton>
   )
 }
@@ -111,7 +111,7 @@ function UploadWorksheetImageDataButton(){
         className="button-with-disabled-variant"
         useOnClick={true}
       >
-        Upload Worksheet Image Data
+        📤 Upload Worksheet Image Data
       </GenericPillButton>
       <input type="file" style={{display: "none"}} ref={fileInputRef} accept=".tar" onChange={onFileInputChange}/>
     </div>
@@ -173,6 +173,7 @@ function updateWorksheetsObjectWithUntarredFiles(untarredFiles){
     const worksheetID = fileName.split("_-")[0]
     const pageNumber = Number(fileName.split("_-")[1].split(".")[0])
     if(worksheets[worksheetID]){
+      if(worksheets[worksheetID].pageBlobs === undefined)worksheets[worksheetID].pageBlobs = {}
       worksheets[worksheetID].pageBlobs[pageNumber] = untarredFiles[fileName].blob
     } else {
       const pageBlobs = {}
@@ -211,7 +212,7 @@ function updateLocalizationPropertyOfAllWorksheets(){
       }
     }
     //While we're here, also update pageCount property
-    if(!["keys", "integerMap"].includes(worksheetID)){
+    if(worksheets[worksheetID].pageBlobs && !["keys", "integerMap"].includes(worksheetID)){
       worksheets[worksheetID].pageCount = Object.keys(worksheets[worksheetID].pageBlobs).length
     }
   }
@@ -269,6 +270,7 @@ function RetrieveWorksheetImageDataButton(){
 }
 
 function retrieveWorksheetsFromIndexedDB( isCalledFromSettingsPage ){
+  console.log("retrieveWorksheetsFromIndexedDB() called " + isCalledFromSettingsPage)
   useAWorksheetProcessIsBusyStore.getState().updateValue(true)
   const workerForRetrieveWorksheetsInIDB = new Worker(constants.webWorkersFolderPath + "/worker_for_retrieve_files_from_idb.js")
   // const workerForRetrieveWorksheetsInIDB = new Worker(constants.webWorkersFolderPath + "/lskdjflskdjf.js")
@@ -293,8 +295,33 @@ function retrieveWorksheetsFromIndexedDB( isCalledFromSettingsPage ){
       }
       Object.assign(worksheets, event.data.content)
       worksheets.keys = Object.keys(worksheets) //Set keys property of worksheets at the start so it doesn't have to be constantly recalcualted
-      window.worksheets = worksheets
       worksheets.integerMap = mapWorksheetIDsToIntegers()
+      
+      //Remove all pageblobs from worksheets object
+      //For downloading
+      const worksheetsWithoutPageBlobs = {}
+      worksheetsWithoutPageBlobs.keys = worksheets.keys
+      worksheetsWithoutPageBlobs.integerMap = worksheets.integerMap
+      for(let id in worksheets){
+        if(id !== "keys" && id !== "integerMap"){
+          worksheetsWithoutPageBlobs[id] = {
+            localization: worksheets[id].localization,
+            is_old: worksheets[id].is_old,
+            pageCount: worksheets[id].pageCount,
+            //no pageBlobs property
+          }
+        }
+      }
+      
+      const worksheetsWithoutPageBlobsString = JSON.stringify(worksheetsWithoutPageBlobs)
+      //Download string contents as json file
+      const blob = new Blob([worksheetsWithoutPageBlobsString], {type: "application/json"})
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.download = "worksheets_without_page_blobs.json";
+      a.href = url;
+      a.click();
+      
       useAWorksheetProcessIsBusyStore.getState().updateValue(false)
     }
   }
@@ -341,7 +368,7 @@ function ClearWorksheetImageDataButton(){
       disabled={aWorksheetProcessIsBusy}
       className="button-with-disabled-variant"
     >
-      Clear Worksheet Image Data
+      🗑️ Clear Worksheet Image Data
     </GenericPillButton>
   )
   

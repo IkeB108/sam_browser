@@ -1,7 +1,8 @@
 import constants from "../constants.js"
 import { create } from "zustand"
 import { CloseButton, GenericPillButton } from "../constants.js"
-import { useSessionStateStore, useUserSettingsStore, worksheets } from "../page.js"
+import { useSessionStateStore, useUserSettingsStore } from "../page.js"
+import { worksheets, retrieveWorksheet } from "../retrieveWorksheet.js"
 import { useUserJustClickedMoveStore, useStatusMessageStore, useAWorksheetProcessIsBusyStore, useAddWorksheetModalIsOpenStore, useUserHasPinchZoomedStore } from "../stores.js"
 import { AddWorksheetModal } from "./AddWorksheetModal.js"
 import { useEffect, useRef } from "react"
@@ -19,6 +20,10 @@ const usePageDraggingStore = create( (set) => ({
   currentPageOnTouchStart: null,
   currentGestureIncludesMultitouch: false
 }))
+
+export const useTimeOfLastWorksheetAddStore = create( (set) => ({
+  timeOfLastWorksheetAdd: null,
+})) //This value is purely for triggering rerenders of the pageContainer when new worksheets are loaded in
 
 const dragToChangeCurrentPageIsAllowed = function(){
   const { userHasPinchZoomed } = useUserHasPinchZoomedStore.getState()
@@ -77,6 +82,9 @@ function onDocumentPointerMove(event){
   if(!userIsDraggingPages || !dragToChangeCurrentPageIsAllowed()) return;
   
   const { setCurrentPageOfWorksheet, getCurrentWorksheetID } = useSessionStateStore.getState()
+  const currentWorksheetID = getCurrentWorksheetID()
+  if(worksheets[currentWorksheetID] === undefined) return; //User doesn't have this worksheet on their system
+  
   event.preventDefault()
   const eventX = event.touches ? event.touches[0].clientX : event.clientX
   const touchEndX = eventX
@@ -136,6 +144,7 @@ function WorksheetViewer(){
     window.usePageDraggingStore = usePageDraggingStore
     window.enableFullscreen = enableFullscreen
     window.disableFullscreen = disableFullscreen
+    
     //Add keydown listener for left and right arrowkeys
     document.addEventListener("keydown", onKeyDownInWorksheetViewer)
     //Add touchstart & touchend event listener (for detecting multitouch only)
@@ -329,6 +338,9 @@ function changePage( prevOrNext ){
   const { pageView } = useUserSettingsStore.getState()
   const pagesToAdvance = (pageView == "single") ? 1 : 2
   let currentWorksheet = getCurrentWorksheetID()
+  
+  if(worksheets[currentWorksheet] === undefined) return; //User doesn't have this worksheet on their system
+  
   let newPage = currentPageOfWorksheet
   if(prevOrNext == "prev") newPage -= pagesToAdvance
   if(prevOrNext == "next") newPage += pagesToAdvance
@@ -526,11 +538,11 @@ function NotesAboutWorksheetTextArea(){
       height: "100%",
       border: "1px solid #A9A09E",
       borderRadius: "8px",
-      paddingLeft: "22px",
       boxSizing: "border-box",
       resize: "none",
       fontSize: "12px",
       fontFamily: "Roboto, sans-serif",
+      padding: "12px"
     }}
     placeholder={`Notes for ${currentWorksheetID}...`}
     value={ currentWorksheetNotes }
@@ -542,6 +554,9 @@ function NotesAboutWorksheetTextArea(){
 }
 
 function PageContainer( {isLeftOrRight} ){
+  
+  useTimeOfLastWorksheetAddStore() //Purely for triggering rerenders when new worksheet images are loaded in
+  
   const pageContainerRef = useRef(null)
   useEffect( ()=> {
     pageContainerRef.current.addEventListener("pointerdown", onPageContainerPointerDown)
@@ -552,6 +567,8 @@ function PageContainer( {isLeftOrRight} ){
       }
     }
   }, [])
+  
+  
   
   //Decide whether dragging to change page is allowed to determine cursor style
   //We won't use dragToChangeCurrentPageIsAllowed because we need all the hooks to be in the body of the component
@@ -577,7 +594,7 @@ function PageContainer( {isLeftOrRight} ){
   const currentWorksheetID = getCurrentWorksheetID()
   if(currentWorksheetID){
     //The user has selected a worksheet from the worksheet selection panel
-    if(!worksheets[currentWorksheetID]){
+    if(!worksheets[currentWorksheetID] || !worksheets[currentWorksheetID].pageBlobs){
       //The user has selected a worksheet that they've not yet downloaded to their system
       pageImageBlob = "worksheet_not_available"
     }
@@ -642,8 +659,8 @@ function PageImage({ pageImageBlob }){
   if(pageImageBlob === "worksheet_not_available"){
     return (
       <div style={pageImageStyle}>
-        <p style={{fontSize: "14px",textWrap: "balance",textAlign: "center"}}>Error</p>
-        <p style={{fontSize: "14px",textWrap: "balance",textAlign: "center"}}>It appears this worksheet is not downloaded to your system.</p>
+        {/* <p style={{fontSize: "14px",textWrap: "balance",textAlign: "center"}}>Error</p>
+        <p style={{fontSize: "14px",textWrap: "balance",textAlign: "center"}}>It appears this worksheet is not downloaded to your system.</p> */}
       </div>
     )
   }
@@ -978,11 +995,13 @@ function CopyStudentDataButton({ index, hasCopied }){
     border: "none"
   }
   
+  const imgWidth = hasCopied ? "16px" : "14px"
+  
   const imgFile = hasCopied ? "copied.svg" : "copy.svg"
   
   return (
     <button style={copyStudentDataButtonStyle} onClick={onClick}>
-      <img src={`${constants.iconsFolderPath}/${imgFile}`} alt="Copy" style={{width: "14px", height: "14px"}}/>
+      <img src={`${constants.iconsFolderPath}/${imgFile}`} alt="Copy" style={{width: imgWidth}}/>
     </button>
     
   )

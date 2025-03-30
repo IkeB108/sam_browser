@@ -8,7 +8,7 @@ export const useAWorksheetProcessIsBusyStore = create( (set) => ({
 }))
 
 export const useStatusMessageStore = create( (set)=> ({
-  statusMessage: "Retrieving worksheet data from your device...",
+  statusMessage: "",
   setStatusMessage: (newValue)=>{ set( ()=>({ statusMessage: newValue }) ) }
 }))
 
