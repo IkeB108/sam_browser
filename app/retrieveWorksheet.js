@@ -4,10 +4,13 @@ Code for retrieving a single worksheet from IDB
 import constants from "./constants.js"
 import { useTimeOfLastWorksheetAddStore } from "./components/WorksheetViewer.js"
 
+const useBasePath = process.env.NEXT_PUBLIC_USEBASEPATH === "true" //grab the NEXT_PUBLIC_USEBASEPATH variable that was declared when “pnpm next build” was called
+const basePathToUse = "/sam_browser/out" //No trailing slash. Change to Github repo name if using Github pages.
+
 export let worksheets = {}
 
 export async function getWorksheetsWithoutPageBlobs() {
-  const filePath = "/worksheetsWithoutPageBlobs.json"; // Path relative to the public folder
+  const filePath = (useBasePath ? basePathToUse : "") + "/worksheetsWithoutPageBlobs.json"; // Path relative to the public folder
   try {
     const response = await fetch(filePath);
     if (!response.ok) {

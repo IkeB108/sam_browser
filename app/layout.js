@@ -6,7 +6,7 @@ const basePathToUse = "/sam_browser/out" //No trailing slash. Change to Github r
 const webWorkersFolderPath = (useBasePath ? basePathToUse : "") + "/web_workers_for_ws_images"
 const cssFilePath = (useBasePath ? basePathToUse : "") + "/global.css"
 export const metadata = {
-  title: 'SAM Browser',
+  title: 'SAM Browser v1.00',
   description: '',
 }
 
