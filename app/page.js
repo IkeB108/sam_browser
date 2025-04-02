@@ -3,6 +3,8 @@
 //     add ?eruda to the end of the URL to enable eruda console debugging
 //     add ?reset to the end of the URL to reset local storage (for fixing critical errors only--shouldn't be needed generally)
 //     add ?download to the end of the URL to download "worksheets" object (without pageBlobs) (shoudl be for development purposes only)
+//     add ?placeholderimages to use placeholder images instead of actual images (for demo purposes)
+
 import React, { useEffect } from 'react'
 import { create } from 'zustand'
 import WorksheetViewer from './components/WorksheetViewer.js'
@@ -237,7 +239,7 @@ const useSessionStateStore = create( (set)=> ({
   setAllowArrowKeysForPageNavigation: (newValue)=>{ set( ()=>({ allowArrowKeysForPageNavigation: newValue }) ) },
   
   lastPointerInputWasTouch: true, //Use for determining whether worksheet search input should autofocus
-  
+  usePlaceholderImages: false,
   saveToLocalStorage: () => {
     const sessionState = useSessionStateStore.getState()
     //Store only the following values in local storage
@@ -326,6 +328,10 @@ function HomePage() {
       //This is a fallback users can use for critical errors that persist after page reloads.
       localStorage.clear()
       window.location.href = window.location.href.replace("?reset", "")
+    }
+    
+    if(window.location.href.includes("?placeholderimages")){
+      useSessionStateStore.setState({usePlaceholderImages: true })
     }
     
     window.visualViewport.addEventListener("resize", updateUserHasPinchZoomedOnResize)

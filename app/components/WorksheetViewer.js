@@ -118,6 +118,16 @@ function onDocumentPointerUp(event){
   const { userIsDraggingPages, currentGestureIncludesMultitouch } = usePageDraggingStore.getState()
   if(userIsDraggingPages && !currentGestureIncludesMultitouch){
     event.preventDefault()
+    
+    //preventDefault() prevents textareas from unfocusing so we need
+    //to manually unfocus them (blur them).
+    //This could just as well be in a pointer down listener
+    document.getElementById("notes-about-worksheet-text-area").blur()
+    const notesElements = document.getElementsByClassName("notes-text-area")
+    for(let i = 0; i < notesElements.length; i++){
+      notesElements[i].blur()
+    }
+    
     usePageDraggingStore.setState({
       userIsDraggingPages: false,
       currentPageOnTouchStart: null,
@@ -594,19 +604,22 @@ function PageContainer( {isLeftOrRight} ){
   const currentWorksheetID = getCurrentWorksheetID()
   if(currentWorksheetID){
     //The user has selected a worksheet from the worksheet selection panel
-    if(!worksheets[currentWorksheetID] || !worksheets[currentWorksheetID].pageBlobs){
+    if( useSessionStateStore.getState().usePlaceholderImages ){ //This doesn't need to be reactive so we can use getState()
+      pageImageBlob = "use_placeholder_images"
+    }
+    else if(!worksheets[currentWorksheetID] || !worksheets[currentWorksheetID].pageBlobs){
       //The user has selected a worksheet that they've not yet downloaded to their system
       pageImageBlob = "worksheet_not_available"
     }
     else if(worksheets[currentWorksheetID].pageBlobs[pageNumber]){
       //The user has selected a worksheet that is downloaded, and a page of pageNumber exists for this worksheet
       pageImageBlob = worksheets[currentWorksheetID].pageBlobs[pageNumber]
-    } 
+    }
   }
   return (
     <div style={pageContainerStyle} ref={pageContainerRef}>
         {/* <PageImage imageSrc="placeholderWorksheetPage.webp" /> */}
-        <PageImage pageImageBlob={pageImageBlob} />
+        <PageImage pageImageBlob={pageImageBlob} pageNumber={pageNumber} />
         {/* <ChangePageButton isLeftOrRight={isLeftOrRight} /> */}
         <PageNumberIndicator isLeftOrRight={isLeftOrRight} pageNumber={pageNumber} pageExists={pageImageBlob === null} />
     </div>
@@ -635,7 +648,7 @@ function PageNumberIndicator({isLeftOrRight, pageNumber, pageExists}){
   )
 }
 
-function PageImage({ pageImageBlob }){
+function PageImage({ pageImageBlob, pageNumber }){
   const pageImageStyle = {
     width: "100%",
     height: "100%",
@@ -656,7 +669,7 @@ function PageImage({ pageImageBlob }){
       </div>
     )
   }
-  if(pageImageBlob === "worksheet_not_available"){
+  if(pageImageBlob === "worksheet_not_available" || pageNumber === 0){
     return (
       <div style={pageImageStyle}>
         {/* <p style={{fontSize: "14px",textWrap: "balance",textAlign: "center"}}>Error</p>
@@ -664,7 +677,13 @@ function PageImage({ pageImageBlob }){
       </div>
     )
   }
-  const fileURL = URL.createObjectURL(pageImageBlob)
+  let fileURL;
+  if( pageImageBlob == "use_placeholder_images" ){
+    const imageNumber = ( (pageNumber - 1) % 5) + 1
+    fileURL = ( constants.useBasePath ? constants.basePathToUse : "" ) + `/placeholder_images/placeholder_image_${imageNumber}.webp`
+  } else {
+    fileURL = URL.createObjectURL(pageImageBlob)
+  }
   return (
     <img
       src={fileURL}
@@ -892,7 +911,10 @@ function StudentSessionCardHeader({studentName, index}){
         {
           copyStudentDataButtonOrSubstitute
         }
-        <h1 style={nameStyle} onClick={ (student.type == "other") ? null : onNameClick }>{studentName}</h1>
+        <div>
+          <h1 style={nameStyle} onClick={ (student.type == "other") ? null : onNameClick }>{studentName}</h1>
+          { studentNotesHaveBeenCopied ? <p style={{margin:"0", fontSize: "12px", color:"#ffd3d3"}}>Copied</p> : null }
+        </div>
       </div>
       <div style={{ display: "flex", alignItems: "center" }}>
         
@@ -1077,7 +1099,7 @@ function StudentSessionCardWorksheetList({ index }){
       setCurrentPageOfWorksheet(newCurrentPage)
     }
     
-    worksheetList.push(<WorksheetListItem key={i} worksheetID={worksheetID} isCurrentWorksheet={isCurrentWorksheet} onClick={onClick} />)
+    worksheetList.push(<WorksheetListItem key={i} worksheetID={worksheetID} isCurrentWorksheet={isCurrentWorksheet} onClick={onClick} notes={thisStudent.openWorksheets[i].notes} />)
   }
   
   if(worksheetList.length == 0){
@@ -1095,7 +1117,7 @@ function StudentSessionCardWorksheetList({ index }){
   )
 }
 
-function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
+function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick, notes }){
   const worksheetListItemStyle = {
     fontFamily: "Roboto, sans-serif",
     fontWeight: "normal",
@@ -1121,6 +1143,12 @@ function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
     flexShrink: 1,
     // textWrap: "balance"
   }
+  const noteStyle = {
+    fontSize: "12px",
+    margin: "0",
+    fontStyle: "italic",
+    color: "#858585"
+  }
   
   //Remove "WS" or " WS" from the end of the worksheetID for display
   //to conserve space
@@ -1141,7 +1169,10 @@ function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
     
     return (
       <div style={worksheetListItemStyle}>
-        <p style={worksheetNameParagraphStyle}>{ worksheetID_without_WS }</p>
+        <div style={{width: "100%"}}>
+          <p style={worksheetNameParagraphStyle}>{ worksheetID_without_WS }</p>
+          { (notes.length > 0) ? <p style={noteStyle}>{notes}</p> : null }
+        </div>
         <div style={{display: "flex"}}>
           {/* <MoveWorksheetButton /> */}
           <CloseButton buttonWidthString="24px" iconWidthString="14px" color="black" onClickFunction={onCloseClick} additionalStyleObject={{flexShrink: 0}} />
@@ -1151,7 +1182,10 @@ function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick }){
   }
   return (
     <button style={worksheetListItemStyle} onClick={onClick}>
-      { worksheetID_without_WS }
+      <div style={{width: "100%"}}>
+        <p style={worksheetNameParagraphStyle}>{ worksheetID_without_WS }</p>
+        { (notes.length > 0) ? <p style={noteStyle}>{notes}</p> : null }
+      </div>
     </button>
   )
 }

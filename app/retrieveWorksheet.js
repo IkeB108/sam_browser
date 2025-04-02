@@ -43,8 +43,14 @@ export function retrieveWorksheet( worksheetID ){
       const worksheet = event.target.result
       if(worksheet !== undefined){
         //Add the worksheet to the global worksheets object
-        worksheets[worksheetID] = worksheet
-        useTimeOfLastWorksheetAddStore.setState( { timeOfLastWorksheetAdd: Date.now() } ) //Update this value purely to trigger rerenders
+        //but only if it has pageBlobs
+        if(worksheet.hasOwnProperty("pageBlobs")){
+          console.log("found worksheet with pageblobs")
+          worksheets[worksheetID] = worksheet
+          useTimeOfLastWorksheetAddStore.setState( { timeOfLastWorksheetAdd: Date.now() } ) //Update this value purely to trigger rerenders
+        } else {
+          console.log("found worksheet but no pageblobs")
+        }
         // console.log("Worksheet added to global worksheets object:", worksheetID)
       }else{
         console.log("Worksheet not found in IDB:", worksheetID)

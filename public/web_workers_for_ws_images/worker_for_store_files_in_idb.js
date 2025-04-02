@@ -29,7 +29,7 @@ self.onmessage = async function(event){
       worksheetCount ++
       if(worksheetCount % 39 == 0){
         useLoadingAnimation = true
-        latestStatusMessage = "Storing worksheets on your browser's cache..."
+        latestStatusMessage = "Storing worksheets in your browser's cache. This may take a minute..."
         // self.postMessage({
         //   "type": "status_update_from_web_worker",
         //   "content": "Storing worksheet #" + worksheetCount + " on your device..."

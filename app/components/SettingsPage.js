@@ -34,6 +34,7 @@ function SettingsPage(){
       <h1>Settings</h1>
       { closeButton }
       {/* { constants.CloseButton("18px", "9px", ()=>{ useSessionStateStore.getState().setCurrentPage("WorksheetViewer") }) } */}
+      <StatusParagraph />
       <UploadWorksheetImageDataButton />
       <br />
       {/* <RetrieveWorksheetImageDataButton />
@@ -43,8 +44,6 @@ function SettingsPage(){
       <MadisonModeButton />
       <br />
       <ResetSessionButton />
-      <br /><br />
-      <StatusParagraph />
       
     </div>
   )
@@ -131,7 +130,7 @@ function UploadWorksheetImageDataButton(){
 }
 
 async function getUntarredFiles(tarFile){
-  setStatusMessageOfWorksheetProcess("Extracting images from tar file...")
+  setStatusMessageOfWorksheetProcess("Extracting images from tar file. This may take a minute...")
   
   const reader = new FileReader()
   let allExtractedFiles = {}
@@ -158,7 +157,7 @@ async function getUntarredFiles(tarFile){
               console.log("File not a webp image: " + fileName)
             }
           }
-          setStatusMessageOfWorksheetProcess(extractedFilesCount + " images extracted. Storing worksheets on your device...")
+          setStatusMessageOfWorksheetProcess(extractedFilesCount + " images extracted. Storing worksheets in your browser's cache. This may take a minute...")
           resolve(allExtractedFiles)
         }
       ).catch(reject);
@@ -356,6 +355,8 @@ function ClearWorksheetImageDataButton(){
   const onClick = function(){
     const tooBusy = useAWorksheetProcessIsBusyStore.getState().aWorksheetProcessIsBusy
     if(!tooBusy){
+      const confirmClear = confirm("Are you sure you want to clear all worksheet image data?")
+      if(!confirmClear) return
       clearWorksheetsInIndexedDB();
       setStatusMessageOfWorksheetProcess("Worksheet image data cleared.")
     }
