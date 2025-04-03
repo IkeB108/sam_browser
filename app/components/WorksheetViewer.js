@@ -864,8 +864,11 @@ function StudentSessionCardHeader({studentName, index}){
   
   
   const onCloseClick = () => {
-    const { deleteOpenStudent } = useSessionStateStore.getState()
-    deleteOpenStudent(index)
+    const confirmCloseStudent = confirm("Remove " + student.name + " from the session?")
+    if(confirmCloseStudent){
+      const { deleteOpenStudent } = useSessionStateStore.getState()
+      deleteOpenStudent(index)
+    }
   }
   
   const moveWorksheetToThisStudent = function(){
@@ -893,6 +896,7 @@ function StudentSessionCardHeader({studentName, index}){
   }
   
   let onNameClick = function(){
+    if( useSessionStateStore.getState().userIsMovingCurrentWorksheet )return
     let newName = prompt(`Enter new name for ${student.name}:`)
     if(newName === null)return
     if(newName.trim().length > 0){
@@ -969,6 +973,15 @@ function StudentNotesTextArea({ index, studentIsOther }){
     useSessionStateStore.getState().setOpenStudents( openStudentsCopy )
   }
   
+  function onKeyDown(event){
+    if(event.key == "Enter" ){
+      const notesTextAreas = document.getElementsByClassName("notes-text-area")
+      for(let i = 0; i < notesTextAreas.length; i++){
+        notesTextAreas[i].blur()
+      }
+    }
+  }
+  
   // const onKeyDown = function(event){
   //   if(event.key == "Enter"){
   //     document.getElementsByClassName("notes-text-area")[index].blur()
@@ -992,7 +1005,7 @@ function StudentNotesTextArea({ index, studentIsOther }){
     value={openStudents[index].notes}
     onChange={ onChange }
     className="notes-text-area"
-    // onKeyDown={ onKeyDown }
+    onKeyDown={ onKeyDown }
   ></textarea>)
 }
 
@@ -1049,7 +1062,7 @@ function copyStudentData( index ){
   }
   
   navigator.clipboard.writeText(stringToCopy).then(() => {
-    alert(`Copied ${student.name}'s data to your clipboard.`)
+    // alert(`Copied ${student.name}'s data to your clipboard.`)
   })
   
   let newOpenStudents = [...openStudents]

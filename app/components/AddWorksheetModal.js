@@ -461,7 +461,8 @@ function KeypadKey({val}){
 function Keypad(){
   
   const keypadStyle = {
-    margin: "auto 0"
+    margin: "auto 0",
+    justifyItems: "center",
   }
   
   const keyRowStyle = {
@@ -482,6 +483,7 @@ function Keypad(){
   }
   return (
     <div style={keypadStyle}>
+      <img src={ constants.iconsFolderPath + "/inputInstructions.svg" } alt="Input instructions: For book 3.24 DWR 1-3, enter 3.24, skip DWR, and enter 1-3" style={{width: "120px", marginBottom: "10px"}}></img>
       <div style={keyRowStyle}>
         <KeypadKey val="A" />
         <KeypadKey val="B" />
