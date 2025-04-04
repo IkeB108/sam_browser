@@ -353,10 +353,11 @@ function LevelButton({levelInteger}){
   let label = "Lvl " + levelInteger
   if(levelInteger == "All")label = "All"
   const levelButtonStyle = {
-    padding: "9px 14px",
+    padding: "8px 12px",
     margin: "0",
     border: "2px solid #DAD6D5",
-    fontWeight: "normal"
+    fontWeight: "normal",
+    fontSize: "16px"
   }
   
   if(selectedLevelInteger == levelInteger){

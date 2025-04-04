@@ -45,7 +45,7 @@ export function retrieveWorksheet( worksheetID ){
         //Add the worksheet to the global worksheets object
         //but only if it has pageBlobs
         if(worksheet.hasOwnProperty("pageBlobs")){
-          console.log("found worksheet with pageblobs")
+          console.log("found worksheet with pageblobs " + worksheetID)
           worksheets[worksheetID] = worksheet
           useTimeOfLastWorksheetAddStore.setState( { timeOfLastWorksheetAdd: Date.now() } ) //Update this value purely to trigger rerenders
         } else {
