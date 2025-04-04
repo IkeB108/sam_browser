@@ -240,8 +240,20 @@ function SearchResultsContainer(){
     //No cleanup function is returned here because the resultElementRefs array
     //should be emptied anyway every time the search results change.
   }
+  
+  let containerStyle = {
+    overflowY: "auto",
+    height: "100%",
+    boxSizing: "border-box",
+    marginTop: "20px", 
+  }
+  if( searchResults.length == 0 ){
+    containerStyle.alignContent = "center"
+    containerStyle.alignSelf = "center"
+  }
   return (
-    <div style={{overflowY: "auto", height: "100%", boxSizing: "border-box", marginTop: "20px"}}>
+    <div style={containerStyle}>
+      { searchResults.length == 0 ? <img src={ constants.iconsFolderPath + "/inputInstructions.svg" } alt="Input instructions: For book 3.24 DWR 1-3, enter 3.24, skip DWR, and enter 1-3" style={{width: "120px"}}></img> : null } 
       {searchResults.map((result, index) => (
         <div onClick={ ()=>{ onSearchResultClick(index) } } style={ chooseStyle(index) } key={index} ref={refCallbackFunction}>
           {result}
@@ -483,7 +495,6 @@ function Keypad(){
   }
   return (
     <div style={keypadStyle}>
-      <img src={ constants.iconsFolderPath + "/inputInstructions.svg" } alt="Input instructions: For book 3.24 DWR 1-3, enter 3.24, skip DWR, and enter 1-3" style={{width: "120px", marginBottom: "10px"}}></img>
       <div style={keyRowStyle}>
         <KeypadKey val="A" />
         <KeypadKey val="B" />

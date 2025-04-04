@@ -154,6 +154,7 @@ function WorksheetViewer(){
     window.usePageDraggingStore = usePageDraggingStore
     window.enableFullscreen = enableFullscreen
     window.disableFullscreen = disableFullscreen
+    window.condenseWorksheetString = condenseWorksheetString
     
     //Add keydown listener for left and right arrowkeys
     document.addEventListener("keydown", onKeyDownInWorksheetViewer)
@@ -1047,7 +1048,7 @@ function copyStudentData( index ){
   const { openStudents } = useSessionStateStore.getState()
   const student = openStudents[index]
   for(let i = 0; i < student.openWorksheets.length; i++){
-    let worksheetString = student.openWorksheets[i].id.replace(/ WS$/, "")
+    let worksheetString = condenseWorksheetString(student.openWorksheets[i].id)
     if(student.openWorksheets[i].notes.length > 0)worksheetString += ` (${student.openWorksheets[i].notes})`
     if(i > 0)worksheetString = "__" + worksheetString
     stringToCopy += worksheetString
@@ -1068,6 +1069,32 @@ function copyStudentData( index ){
   let newOpenStudents = [...openStudents]
   newOpenStudents[index].notesCopied = true
   useSessionStateStore.getState().setOpenStudents(newOpenStudents)
+}
+
+function condenseWorksheetString(worksheetString){
+  let newVal = worksheetString.replace(/ WS$/, "")
+  let newValArray = newVal.split(" ")
+  let filteredValArray = []
+  let valsForStringToInclude = [".", "-", "("]
+  let valsForStringToMatch = ["HF", "TP"]
+  let stringPassesFilter = (stringVal) => {
+    for(let i in valsForStringToInclude){
+      if(stringVal.includes(valsForStringToInclude[i]))return true
+    }
+    for(let i in valsForStringToMatch){
+      if(stringVal == valsForStringToMatch[i])return true
+    }
+    return false
+  }
+  for(let i = 0; i < newValArray.length; i++){
+    let val = newValArray[i].toUpperCase()
+    if( stringPassesFilter(val)  ){
+      if(val == "(OLD)")val = "⌛"
+      if(val == "(USA)")val = "(usa)"
+      filteredValArray.push(val)
+    }
+  }
+  return filteredValArray.join(" ")
 }
 
 function StudentSessionCardWorksheetList({ index }){
