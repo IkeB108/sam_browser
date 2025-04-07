@@ -77,7 +77,7 @@ function onDocumentTouchEnd(event){
 }
 
 function onDocumentPointerMove(event){
-  const dragDistanceOfOneIncrement = 60 //px
+  const dragDistanceOfOneIncrement = 120 //px
   const { userIsDraggingPages, touchStartX, currentPageOnTouchStart } = usePageDraggingStore.getState()
   if(!userIsDraggingPages || !dragToChangeCurrentPageIsAllowed()) return;
   
