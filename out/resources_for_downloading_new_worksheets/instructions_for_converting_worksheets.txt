@@ -1,0 +1,19 @@
+In the WSL terminal:
+pdftoppm file1.pdf outputfilename -jpg -r 50
+
+(-r 50 = 50 dpm. Default is 150)
+
+To do all:
+for file in *.pdf; do pdftoppm "$file" "../jpeg/${file%.pdf}_" -jpeg -r 300; done
+
+-r 300 means set DPI to 300 (default is 150). This is to minimize JPEG compression artifacts so that I can then compress images to WEBP format with these settings in Irfanview:
+
+Output format: WEBP
+Options:
+  Quality: 20
+  Compression method: 6 (slowest)
+Advanced:
+  Resize: Set new size as percentage of original: 20%
+  Preserve aspect ratio
+  Use Resample function
+Name pattern: $N

@@ -77,7 +77,7 @@ function onDocumentTouchEnd(event){
 }
 
 function onDocumentPointerMove(event){
-  const dragDistanceOfOneIncrement = 120 //px
+  const dragDistanceOfOneIncrement = 60 //px
   const { userIsDraggingPages, touchStartX, currentPageOnTouchStart } = usePageDraggingStore.getState()
   if(!userIsDraggingPages || !dragToChangeCurrentPageIsAllowed()) return;
   
@@ -720,6 +720,11 @@ function WorksheetSelectionPanel(){
         flexDirection: "column"
       }}>
       <div style={worksheetSelectionPanelStyle}>
+      {/* <p style={{
+        margin: "0 0 12px 0",
+        fontFamily: "Roboto, sans-serif",
+        fontSize: "12px",
+      }}>Students</p> */}
         {
           openStudents.map( (student, index) => {
             return <StudentSessionCard index={index} key={index} />
@@ -853,13 +858,13 @@ function StudentSessionCardHeader({studentName, index}){
   if(student.type == "other"){
     studentColorIndicatorCircleStyle.backgroundColor = "#00000000"
     headerStyle.backgroundColor = "white"
-    headerStyle.justifyContent = "center"
-    headerStyle.padding = "10px 0px"
+    // headerStyle.justifyContent = "center"
+    headerStyle.padding = "10px 10px"
     headerStyle["--original-bg-color"] = "rgb(223, 223, 223)"
     headerStyle["--pulsate-bg-color"] = "white"
     nameStyle.color = "black"
     delete nameStyle.cursor
-    containerStyle = null
+    // containerStyle = null
     
   }
   
@@ -887,12 +892,14 @@ function StudentSessionCardHeader({studentName, index}){
   let closeButtonOrSubstitute = <CloseButton buttonWidthString="24px" iconWidthString="14px" color="white" onClickFunction={onCloseClick} />
   let studentNotesHaveBeenCopied = openStudents[index].notesCopied
   let copyStudentDataButtonOrSubstitute = <CopyStudentDataButton index={index} hasCopied={studentNotesHaveBeenCopied} />
+  if(student.type == "other"){
+    closeButtonOrSubstitute = <ClearButtonForOtherStudent index={index} />
+  }
   if(userIsMovingCurrentWorksheet){
     closeButtonOrSubstitute = <div style={{width: "24px", height: "24px"}}></div> //empty div
     copyStudentDataButtonOrSubstitute = <div style={{width: "24px", height: "24px"}}></div> //empty div
   }
   if(student.type == "other"){
-    closeButtonOrSubstitute = null
     copyStudentDataButtonOrSubstitute = null
   }
   
@@ -961,6 +968,40 @@ function StudentSessionCardFooter({ index, studentIsOther }){
         <AddWorksheetButton styleObject={circularButtonStyle} index={index} />
       </div>
     </div>
+  )
+}
+
+function ClearButtonForOtherStudent({index}){
+  const clearButtonStyle = {
+    width: "24px",
+    height: "24px",
+    backgroundColor: "#00000000",
+    border: "none",
+    cursor: "pointer",
+    padding: "0px",
+    verticalAlign: "middle",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    boxSizing: "border-box",
+  }
+  const onClick = function(){
+    let confirmClearStudent = confirm("Clear all worksheets from 'Other'?")
+    if(!confirmClearStudent)return
+    let newOpenStudents = [...useSessionStateStore.getState().openStudents]
+    newOpenStudents[index].openWorksheets = []
+    useSessionStateStore.getState().setOpenStudents(newOpenStudents)
+    
+    const indexOfStudentWithCurrentWorksheet = useSessionStateStore.getState().currentWorksheet.openStudentIndex
+    if(indexOfStudentWithCurrentWorksheet == index){
+      //If "Other" is the student with the currently open worksheet, set to null
+      useSessionStateStore.getState().setCurrentWorksheet(null, null)
+    }
+  }
+  return (
+    <button style={clearButtonStyle} onClick={onClick}>
+      <img src={`${constants.iconsFolderPath}/trash.svg`} alt="Clear" style={{width: "20px"}}/>
+    </button>
   )
 }
 
