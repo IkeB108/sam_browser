@@ -943,7 +943,8 @@ function StudentSessionCardFooter({ index, studentIsOther }){
     backgroundColor: "none",
     // padding: "14px 14px",
     // paddingTop: "0px",
-    justifyContent: "space-between",
+    // justifyContent: "space-between",
+    justifyContent: "flex-end",
     alignItems: "center",
     display: "flex"
   }
@@ -964,7 +965,7 @@ function StudentSessionCardFooter({ index, studentIsOther }){
     <div style={ {padding: "10px 6px", paddingTop: "0px"} }>
       <StudentNotesTextArea index={index} studentIsOther={studentIsOther} />
       <div style={footerStyle}>
-        <TimerStartButton styleObject={circularButtonStyle} index={index} />
+        {/* <TimerStartButton styleObject={circularButtonStyle} index={index} /> */}
         <AddWorksheetButton styleObject={circularButtonStyle} index={index} />
       </div>
     </div>
