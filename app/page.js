@@ -2,7 +2,7 @@
 //     ikeb108.github.io/sam_browser/out
 //     add ?eruda to the end of the URL to enable eruda console debugging
 //     add ?reset to the end of the URL to reset local storage (for fixing critical errors only--shouldn't be needed generally)
-//     add ?download to the end of the URL to download "worksheets" object (without pageBlobs) (shoudl be for development purposes only)
+//     add ?download to the end of the URL to download "worksheets" object (without pageBlobs) (should be for development purposes only). To use this, upload worksheet data and then reload the page with ?download
 //     add ?placeholderimages to use placeholder images instead of actual images (for demo purposes)
 
 import React, { useEffect } from 'react'
@@ -405,11 +405,12 @@ function HomePage() {
     window.useSessionStateStore = useSessionStateStore;
     window.useUserSettingsStore = useUserSettingsStore;
     
-    getWorksheetsWithoutPageBlobs()
     
     if(window.location.href.includes("?download")){
       //On page load, retrieve all worksheets from IndexedDB if any. This function is imported from SettingsPage.js
       retrieveWorksheetsFromIndexedDB()
+    } else {
+      getWorksheetsWithoutPageBlobs()
     }
   }, [])
   /*
