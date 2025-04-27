@@ -246,6 +246,7 @@ export function PressDownButton(props){ //Expects a functionToTrigger prop
 
 const useBasePath = process.env.NEXT_PUBLIC_USEBASEPATH === "true" //grab the NEXT_PUBLIC_USEBASEPATH variable that was declared when “pnpm next build” was called
 const basePathToUse = "/sam_browser/out" //No trailing slash. Change to Github repo name if using Github pages.
+// const basePathToUse = "/project-copies/ws-browser"
 
 const constants = {
   softBorderColor: "#A9A09E",

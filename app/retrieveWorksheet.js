@@ -5,7 +5,7 @@ import constants from "./constants.js"
 import { useTimeOfLastWorksheetAddStore } from "./components/WorksheetViewer.js"
 
 const useBasePath = process.env.NEXT_PUBLIC_USEBASEPATH === "true" //grab the NEXT_PUBLIC_USEBASEPATH variable that was declared when “pnpm next build” was called
-const basePathToUse = "/sam_browser/out" //No trailing slash. Change to Github repo name if using Github pages.
+const basePathToUse = constants.basePathToUse //No trailing slash. Change to Github repo name if using Github pages.
 
 export let worksheets = {}
 

@@ -1,0 +1,29 @@
+.turn-page-button {
+  background-color: rgb(0,0,0,0.35);
+}
+
+.button-with-disabled-variant:disabled {
+  background-color: gray !important;
+  cursor: not-allowed !important;
+}
+
+.pulsatingHeader {
+  animation: pulsateHeader 1s infinite;
+  -webkit-animation:pulsateHeader 1s infinite;
+  background-color: var(--original-bg-color)
+}
+
+@keyframes pulsateHeader {
+  0% {
+    /* border-color: #611c1300; */
+    background-color: var(--original-bg-color)
+  }
+  50% {
+    /* border-color: #611c13ff; */
+    background-color: var(--pulsate-bg-color);
+  }
+  100% {
+    /* border-color: #611c1300; */
+    background-color: var(--original-bg-color)
+  }
+}

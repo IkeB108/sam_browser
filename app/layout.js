@@ -1,12 +1,13 @@
 import Script from "next/Script";
-import constants from "./constants.js";
 
 const useBasePath = process.env.NEXT_PUBLIC_USEBASEPATH === "true" //grab the NEXT_PUBLIC_USEBASEPATH variable that was declared when “pnpm next build” was called
 const basePathToUse = "/sam_browser/out" //No trailing slash. Change to Github repo name if using Github pages.
+// const basePathToUse = "/project-copies/ws-browser"
 const webWorkersFolderPath = (useBasePath ? basePathToUse : "") + "/web_workers_for_ws_images"
 const cssFilePath = (useBasePath ? basePathToUse : "") + "/global.css"
+
 export const metadata = {
-  title: 'SAM Browser v1.00',
+  title: 'WS Browser',
   description: '',
 }
 

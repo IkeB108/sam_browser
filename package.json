@@ -7,7 +7,7 @@
     "dev": "pnpm next dev",
     "buildlocal": "cross-env NEXT_PUBLIC_USEBASEPATH=false pnpm next build",
     "buildwithbasepath": "cross-env NEXT_PUBLIC_USEBASEPATH=true pnpm next build",
-    "servelocal": "serve out"
+    "servelocal": "pnpm serve out"
   },
   "keywords": [],
   "author": "",
