@@ -1337,13 +1337,7 @@ function AddStudentButton(){
   // const tooManyStudents = idOfLastStudentAdded == "99" ? true : false
   const onClick = function(){
     
-    //currentWorksheet is defined by the index of the open student, so if a new student
-    //is added above the "other" student card, the openStudentIndex will be offset by one. This corrects that
     const { currentWorksheet, openStudents, numberInNameOfLastStudentAdded } = useSessionStateStore.getState()
-    if( currentWorksheet.openStudentIndex == openStudents.length - 1 ){
-      useSessionStateStore.getState().setCurrentWorksheet(openStudents.length, 0)
-      console.log( openStudents.length - 1 )
-    }
     
     let numberInName = Number(numberInNameOfLastStudentAdded) + 1
     let color = "green"
@@ -1353,7 +1347,12 @@ function AddStudentButton(){
     }
     useSessionStateStore.setState( (state) => ({ numberInNameOfLastStudentAdded: numberInName }) )
     useSessionStateStore.getState().addOpenStudentToBottom("Student " + numberInName, color)
-    
+    //currentWorksheet is defined by the index of the open student, so if a new student
+    //is added above the "other" student card, the openStudentIndex will be offset by one. This corrects that
+    if( currentWorksheet.openStudentIndex == openStudents.length - 1 ){ //If the current worksheet that's open is in the "Other" student
+      useSessionStateStore.getState().setCurrentWorksheet(openStudents.length, 0) //Increase the current worksheet index by 1
+      console.log( openStudents.length - 1 )
+    }
   }
   return (
     <GenericPillButton useOnClick={true} isFilled={true} isShort={true} functionToTrigger={onClick} additionalStyleObject={{margin: "0 auto", paddingLeft: "15px", paddingRight: "15px"}} id="add-student-button">

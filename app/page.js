@@ -216,6 +216,11 @@ const useSessionStateStore = create( (set)=> ({
     const { openStudents, currentWorksheet } = useSessionStateStore.getState()
     if(currentWorksheet.openStudentIndex === null || currentWorksheet.worksheetIndex === null) return null
     
+    //If the worksheet at currentWorksheet doesn't exist, then return null.
+    //This is a failsafe. worksheetExists should always be true if the code is working correctly.
+    let worksheetExists = typeof openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex].id !== "undefined"
+    if(!worksheetExists)return null;
+    
     return openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex].id
   },
   userIsMovingCurrentWorksheet: false,
