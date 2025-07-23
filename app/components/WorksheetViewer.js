@@ -33,17 +33,236 @@ const dragToChangeCurrentPageIsAllowed = function(){
   return !userHasPinchZoomed && !pagesAreHidden && (currentWorksheet.worksheetIndex != null) && !currentGestureIncludesMultitouch
 }
 
-function onKeyDownInWorksheetViewer(event){
-  const { allowArrowKeysForPageNavigation } = useSessionStateStore.getState()
-  if(allowArrowKeysForPageNavigation){
-    if(event.key == "ArrowLeft"){
-      changePage("prev")
-    }
-    if(event.key == "ArrowRight"){
-      changePage("next")
+function allTextInputsBlurred(){
+  
+  return document.activeElement.tagName != "INPUT" && document.activeElement.tagName != "TEXTAREA"
+}
+
+// const keyboardShortcuts = {
+//   "prevPage": ["a", "ArrowLeft"],
+//   "nextPage": ["d", "ArrowRight"],
+//   "prevWorksheet": ["w", "ArrowUp"],
+//   "nextWorksheet": ["s", "ArrowDown"],
+//   "nextStudent": ["e"],
+//   "prevStudent": ["q"],
+//   "addWorksheetNote": ["f"],
+//   "addStudentNote": ["g"],
+//   "addWorksheet": ["r"]
+// }
+
+const keyboardShortcuts = {
+  "prevPage": ["d", "ArrowLeft"],
+  "nextPage": ["f", "ArrowRight"],
+  "prevWorksheet": ["a", "ArrowUp"],
+  "nextWorksheet": ["s", "ArrowDown"],
+  "prevStudent": ["e"],
+  "nextStudent": ["r"],
+  "addWorksheetNote": ["t"],
+  "addStudentNote": ["g"],
+  "addWorksheet": ["w"],
+  "addStudent": ["x"],
+  "renameStudent": ["z"],
+  "copyOneWorksheet": ["c"],
+  "copyStudent": ["v"]
+}
+
+function matchEventKeyToShortcut(eventKey){
+  for(let action in keyboardShortcuts){
+    if(keyboardShortcuts[action].includes(eventKey)){
+      return action
     }
   }
-  
+  return null
+}
+
+function onKeyDownInWorksheetViewer(event){
+  const { allowArrowKeysForPageNavigation } = useSessionStateStore.getState()
+  let action = matchEventKeyToShortcut(event.key)
+  if(allowArrowKeysForPageNavigation && allTextInputsBlurred() && action !== null){
+    const { openStudentIndex, worksheetIndex } = useSessionStateStore.getState().currentWorksheet
+    switch ( action ){
+      case "prevPage":
+        changePage("prev")
+        break;
+      case "nextPage":
+        changePage("next")
+        break;
+      case "prevWorksheet":
+        advanceToWorksheet("prev")
+        break;
+      case "nextWorksheet":
+        advanceToWorksheet("next")
+        break;
+      case "nextStudent":
+        advanceToStudent("next")
+        break;
+      case "prevStudent":
+        advanceToStudent("prev")
+        break;
+      case "addWorksheetNote":
+        //Shortcut to add a note for the worksheet
+        if( document.getElementById("notes-about-worksheet-text-area") ){
+          document.getElementById("notes-about-worksheet-text-area").focus()
+          event.preventDefault()
+        }
+        break;
+      case "addStudentNote":
+        //Shortcut to add a note for the student (we have to find the textbox specifically for this student)
+        let studentCardDiv = document.getElementById("worksheetSelectionPanelChildDiv").children[ openStudentIndex ]
+        let textArea = studentCardDiv.getElementsByTagName("textarea")[0]
+        if(textArea){
+          studentCardDiv.getElementsByTagName("textarea")[0].focus()
+          event.preventDefault()
+        }
+        break;
+      case "addWorksheet":
+        //Shortcut to add a worksheet for this student.
+        addWorksheet( openStudentIndex )
+        event.preventDefault();
+        break;
+      case "addStudent":
+        addStudent()
+        break;
+      case "renameStudent":
+        renameStudent( openStudentIndex )
+        break;
+      case "copyOneWorksheet":
+        copyWorksheetData( openStudentIndex, worksheetIndex )
+        break;
+      case "copyStudent":
+        copyStudentData( openStudentIndex )
+        break;
+    }
+    // if(["a", "ArrowLeft"].includes(event.key)){
+    //   changePage("prev")
+    // }
+    // else if(["d", "ArrowRight"].includes(event.key)){
+    //   changePage("next")
+    // }
+    // else if(["w", "ArrowUp"].includes(event.key)){
+    //   advanceToWorksheet("prev")
+    //   event.preventDefault();
+    // }
+    // else if(["s", "ArrowDown"].includes(event.key)){
+    //   advanceToWorksheet("next")
+    //   event.preventDefault();
+    // }
+    // else if(["e"].includes(event.key)){
+    //   //Jump to next student
+    //   advanceToStudent("next")
+    // }
+    // else if(["q"].includes(event.key)){
+    //   advanceToStudent("prev")
+    // }
+    // else if(["f"].includes(event.key)){
+    //   //Shortcut to add a note for the worksheet
+    //   if( document.getElementById("notes-about-worksheet-text-area") ){
+    //     document.getElementById("notes-about-worksheet-text-area").focus()
+    //     event.preventDefault()
+    //   }
+    // }
+    // else if(["g"].includes(event.key)){
+    //   //Shortcut to add a note for the student (we have to find the textbox specifically for this student)
+    //   const openStudentIndex = useSessionStateStore.getState().currentWorksheet.openStudentIndex
+    //   let studentCardDiv = document.getElementById("worksheetSelectionPanelChildDiv").children[ openStudentIndex ]
+    //   studentCardDiv.getElementsByTagName("textarea")[0].focus()
+    //   event.preventDefault()
+    // }
+    // else if(["r"].includes(event.key)){
+    //   //Shortcut to add a worksheet for this student.
+    //   const openStudentIndex = useSessionStateStore.getState().currentWorksheet.openStudentIndex
+    //   addWorksheet( openStudentIndex )
+    //   event.preventDefault();
+    // }
+  }
+}
+
+function advanceToStudent(nextOrPrev){
+  const { currentWorksheet, openStudents } = useSessionStateStore.getState()
+  let currentStudent = openStudents[currentWorksheet.openStudentIndex]
+  let { worksheetIndex, openStudentIndex } = currentWorksheet
+  let newStudentIndex = "same" //If this remains "same", then the currently open student stayed the same and no scrolling is required
+  if(nextOrPrev == "next"){
+    //First, try to move to the next student (if there is one)
+    if(openStudents.length > openStudentIndex + 1){
+      newStudentIndex = openStudentIndex + 1
+    } else {
+      if(openStudentIndex !== 0)newStudentIndex = 0
+    }
+  }
+  if(nextOrPrev == "prev"){
+    if(openStudentIndex > 0){
+      newStudentIndex = openStudentIndex - 1
+    } else {
+      if(openStudentIndex !== openStudents.length - 1)newStudentIndex = openStudents.length - 1;
+    }
+  }
+  if(newStudentIndex !== "same"){
+    //When switching to this new student, try to open their last opened worksheet (if any)
+    let newStudent = openStudents[newStudentIndex]
+    let indexOfLastWorksheetOpen = newStudent.indexOfLastWorksheetOpen
+    let lastOpenWorksheetExists = typeof newStudent.openWorksheets[indexOfLastWorksheetOpen] !== "undefined"
+    if( lastOpenWorksheetExists ){
+      useSessionStateStore.getState().setCurrentWorksheet( newStudentIndex, indexOfLastWorksheetOpen )
+    } else {
+      //Their last opened worksheet doesn't exist (or never existed) so open their first worksheet (if any)
+      let newWorksheetIndex = ( newStudent.openWorksheets.length > 0 ) ? 0 : null
+      useSessionStateStore.getState().setCurrentWorksheet( newStudentIndex, newWorksheetIndex )
+    }
+    
+    scrollToStudent(newStudentIndex)
+  }
+}
+
+function advanceToWorksheet(nextOrPrev){
+  const { currentWorksheet, openStudents } = useSessionStateStore.getState()
+  let currentStudent = openStudents[currentWorksheet.openStudentIndex]
+  let { worksheetIndex, openStudentIndex } = currentWorksheet
+  let newStudentIndex = "same" //If this remains "same", then the currently open student stayed the same and no scrolling is required
+  if(nextOrPrev == "next"){
+    //First, try to move to the next worksheet in the current student's list (if there is one)
+    if(currentStudent.openWorksheets.length > worksheetIndex + 1){
+      useSessionStateStore.getState().setCurrentWorksheet( openStudentIndex, worksheetIndex + 1 );
+      // No new student index
+    } else if(openStudents.length > openStudentIndex + 1) { //Next, try just moving to the next student
+      //If the newly selected student has at least one worksheet, nav to that. Otherwise, current worksheet index is null.
+      let newWorksheetIndex = (openStudents[openStudentIndex + 1].openWorksheets.length > 0) ? 0 : null
+      useSessionStateStore.getState().setCurrentWorksheet( openStudentIndex + 1, newWorksheetIndex )
+      newStudentIndex = openStudentIndex + 1
+    } else {
+      //Loop back around to first student (will be "Other" if there are no others)
+      let newWorksheetIndex = (openStudents[0].openWorksheets.length > 0) ? 0 : null
+      useSessionStateStore.getState().setCurrentWorksheet( 0, newWorksheetIndex )
+      newStudentIndex = 0
+    }
+  }
+  if(nextOrPrev == "prev"){
+    //First, try to move to the previous worksheet in the current student's list (if there is one)
+    if(worksheetIndex > 0){
+      useSessionStateStore.getState().setCurrentWorksheet( openStudentIndex, worksheetIndex - 1)
+      //No new student index
+    } else if(openStudentIndex > 0) { //Next, try just moving to the previous student
+      //If the newly selected student has at least one worksheet, nav to that. Otherwise, current worksheet index is null.
+      let newWorksheetIndex = openStudents[openStudentIndex - 1].openWorksheets.length - 1
+      if(newWorksheetIndex == -1)newWorksheetIndex = null;
+      useSessionStateStore.getState().setCurrentWorksheet( openStudentIndex - 1, newWorksheetIndex )
+      newStudentIndex = openStudentIndex - 1
+    } else {
+      //Loop back around to last student
+      newStudentIndex = openStudents.length - 1
+      let newWorksheetIndex = openStudents[newStudentIndex].openWorksheets.length - 1
+      if(newWorksheetIndex == -1)newWorksheetIndex = null;
+      useSessionStateStore.getState().setCurrentWorksheet( newStudentIndex, newWorksheetIndex )
+    }
+  }
+  if(newStudentIndex !== "same"){
+    //Update to be the last page in the worksheet
+    scrollToStudent(newStudentIndex)
+  }
+}
+
+function scrollToStudent( studentIndex ){
+  document.getElementById("worksheetSelectionPanelChildDiv").children[studentIndex].scrollIntoView({behavior: "smooth"})
 }
 
 function onPageContainerPointerDown(event){
@@ -536,7 +755,7 @@ function NotesAboutWorksheetTextArea(){
   }
   
   function onKeyDown(event){
-    if(event.key == "Enter" ){
+    if(event.key == "Enter" || event.key == "`" || event.key == "Escape"){
       document.getElementById("notes-about-worksheet-text-area").blur()
     }
   }
@@ -719,7 +938,7 @@ function WorksheetSelectionPanel(){
         display: "flex",
         flexDirection: "column"
       }}>
-      <div style={worksheetSelectionPanelStyle}>
+      <div style={worksheetSelectionPanelStyle} id="worksheetSelectionPanelChildDiv">
       {/* <p style={{
         margin: "0 0 12px 0",
         fontFamily: "Roboto, sans-serif",
@@ -782,11 +1001,12 @@ function StudentSessionCard({index}){
   const openStudents = useSessionStateStore( (state) => state.openStudents )
   let student = openStudents[index]
   let studentIsOther = ( student.type == "other" )
+  let isCurrentStudent = useSessionStateStore( (state) => state.currentWorksheet.openStudentIndex ) == index
+  
   const studentSessionCardStyle = {
     width: "100%",
     backgroundColor: "white",
     borderRadius: "12px",
-    // border: `1px solid ${constants.softBorderColor}`,
     boxShadow: "0px 1px 2px rgba(0, 0, 0, 0.45)",
     boxSizing: "border-box",
     marginBottom: "12px",
@@ -798,8 +1018,12 @@ function StudentSessionCard({index}){
     studentSessionCardStyle.border = "1px solid #eeeeee"
   }
   
+  if(isCurrentStudent){
+    studentSessionCardStyle.border = `2px solid ${constants.softBorderColor}`
+  }
+  
   return (
-    <div style={studentSessionCardStyle}>
+    <div style={studentSessionCardStyle} id={"studentSessionCard_" + index}>
       <StudentSessionCardHeader index={index} studentName={student.name} />
       <StudentSessionCardWorksheetList index={index} />
       <StudentSessionCardFooter index={index} studentIsOther={studentIsOther} />
@@ -905,13 +1129,14 @@ function StudentSessionCardHeader({studentName, index}){
   
   let onNameClick = function(){
     if( useSessionStateStore.getState().userIsMovingCurrentWorksheet )return
-    let newName = prompt(`Enter new name for ${student.name}:`)
-    if(newName === null)return
-    if(newName.trim().length > 0){
-      let newOpenStudents = [...openStudents]
-      newOpenStudents[index].name = newName
-      useSessionStateStore.getState().setOpenStudents(newOpenStudents)
-    }
+    renameStudent(index)
+    // let newName = prompt(`Enter new name for ${student.name}:`)
+    // if(newName === null)return
+    // if(newName.trim().length > 0){
+    //   let newOpenStudents = [...openStudents]
+    //   newOpenStudents[index].name = newName
+    //   useSessionStateStore.getState().setOpenStudents(newOpenStudents)
+    // }
   }
   return (
     <div style={headerStyle}
@@ -936,6 +1161,19 @@ function StudentSessionCardHeader({studentName, index}){
       </div>
     </div>
   )
+}
+
+function renameStudent( indexOfStudent ){
+  const { openStudents } = useSessionStateStore.getState()
+  let student = openStudents[indexOfStudent];
+  if(student.type == "other") return;
+  let newName = prompt(`Enter new name for ${student.name}:`)
+  if(newName === null)return
+  if(newName.trim().length > 0){
+    let newOpenStudents = [...openStudents]
+    newOpenStudents[indexOfStudent].name = newName
+    useSessionStateStore.getState().setOpenStudents(newOpenStudents)
+  }
 }
 
 function StudentSessionCardFooter({ index, studentIsOther }){
@@ -1017,7 +1255,7 @@ function StudentNotesTextArea({ index, studentIsOther }){
   }
   
   function onKeyDown(event){
-    if(event.key == "Enter" ){
+    if(event.key == "Enter" || event.key == "`" || event.key == "Escape"){
       const notesTextAreas = document.getElementsByClassName("notes-text-area")
       for(let i = 0; i < notesTextAreas.length; i++){
         notesTextAreas[i].blur()
@@ -1085,6 +1323,15 @@ function CopyStudentDataButton({ index, hasCopied }){
   )
 }
 
+function copyWorksheetData( studentIndex, worksheetIndex ){
+  const { openStudents } = useSessionStateStore.getState()
+  const student = openStudents[ studentIndex ]
+  if(!student.openWorksheets[worksheetIndex]) return;
+  let worksheetString = condenseWorksheetString(student.openWorksheets[worksheetIndex].id)
+  if(student.openWorksheets[worksheetIndex].notes.length > 0)worksheetString += ` (${student.openWorksheets[worksheetIndex].notes})`
+  navigator.clipboard.writeText( worksheetString )
+}
+
 function copyStudentData( index ){
   let stringToCopy = ""
   const { openStudents } = useSessionStateStore.getState()
@@ -1095,7 +1342,7 @@ function copyStudentData( index ){
     if(i > 0)worksheetString = "__" + worksheetString
     stringToCopy += worksheetString
   }
-  if(student.notes.length > 0){
+  if(student.notes && student.notes.length > 0){
     stringToCopy += `>>${student.notes}`
   }
   
@@ -1166,19 +1413,21 @@ function StudentSessionCardWorksheetList({ index }){
     const isCurrentWorksheet = currentWorksheet.openStudentIndex == thisStudentIndex && currentWorksheet.worksheetIndex == i
     
     const onClick = function(){
-      const { setCurrentWorksheet, setUserIsMovingCurrentWorksheet, setCurrentPageOfWorksheet, openStudents } = useSessionStateStore.getState()
-      const { pageView } = useUserSettingsStore.getState()
+      const {setCurrentWorksheet, setUserIsMovingCurrentWorksheet} = useSessionStateStore.getState()
       setCurrentWorksheet(thisStudentIndex, i)
       setUserIsMovingCurrentWorksheet(false)
+      // goToLastOpenPageOfWorksheet( thisStudentIndex, i )
+      // const { setCurrentWorksheet, setUserIsMovingCurrentWorksheet, setCurrentPageOfWorksheet, openStudents } = useSessionStateStore.getState()
+      // const { pageView } = useUserSettingsStore.getState()
       
-      let newCurrentPage = openStudents[thisStudentIndex].openWorksheets[i].pageLeftOff
-      if(pageView == "single"){
-        if(newCurrentPage == 0)newCurrentPage = 1
-      }
-      if(pageView == "double"){
-        if(newCurrentPage % 2 == 1)newCurrentPage --
-      }
-      setCurrentPageOfWorksheet(newCurrentPage)
+      // let newCurrentPage = openStudents[thisStudentIndex].openWorksheets[i].pageLeftOff
+      // if(pageView == "single"){
+      //   if(newCurrentPage == 0)newCurrentPage = 1
+      // }
+      // if(pageView == "double"){
+      //   if(newCurrentPage % 2 == 1)newCurrentPage --
+      // }
+      // setCurrentPageOfWorksheet(newCurrentPage)
     }
     
     worksheetList.push(<WorksheetListItem key={i} worksheetID={worksheetID} isCurrentWorksheet={isCurrentWorksheet} onClick={onClick} notes={thisStudent.openWorksheets[i].notes} />)
@@ -1198,6 +1447,19 @@ function StudentSessionCardWorksheetList({ index }){
     </div>
   )
 }
+
+// function goToLastOpenPageOfWorksheet( studentIndex, worksheetIndex ){
+//   const { setCurrentPageOfWorksheet, openStudents } = useSessionStateStore.getState()
+//   const { pageView } = useUserSettingsStore.getState()
+//   let newCurrentPage = openStudents[studentIndex].openWorksheets[worksheetIndex].pageLeftOff
+//   if(pageView == "single"){
+//     if(newCurrentPage == 0)newCurrentPage = 1
+//   }
+//   if(pageView == "double"){
+//     if(newCurrentPage % 2 == 1)newCurrentPage --
+//   }
+//   setCurrentPageOfWorksheet(newCurrentPage)
+// }
 
 function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick, notes }){
   const worksheetListItemStyle = {
@@ -1244,9 +1506,11 @@ function WorksheetListItem({ worksheetID, isCurrentWorksheet, onClick, notes }){
       //Remove the worksheet from this student's openWorksheets array
       const thisStudent = useSessionStateStore.getState().openStudents[currentWorksheet.openStudentIndex]
       thisStudent.openWorksheets.splice(currentWorksheet.worksheetIndex, 1)
+      thisStudent.indexOfLastWorksheetOpen = null;
       //Set the currently open worksheet to null
-      useSessionStateStore.getState().setCurrentWorksheet(null, null)
+      useSessionStateStore.getState().setCurrentWorksheet(currentWorksheet.openStudentIndex, null) //This should call useSessionStateStore.getState().saveToLocalStorage() to update the deleted worksheet but it seems to lag behind for some reason? So we'll have to call it again
       useSessionStateStore.getState().setUserIsMovingCurrentWorksheet(false)
+      useSessionStateStore.getState().saveToLocalStorage()
     }
     
     return (
@@ -1320,10 +1584,36 @@ function TimerStartButton({ styleObject }){
   )
 }
 
+function addWorksheet(indexOfStudentAddingFor){
+  useAddWorksheetModalIsOpenStore.getState().setAddWorksheetModalIsOpen(true)
+  useAddWorksheetModalIsOpenStore.getState().setIndexOfStudentAddingFor(indexOfStudentAddingFor)
+}
+
+function addStudent(){
+  const { currentWorksheet, openStudents, numberInNameOfLastStudentAdded } = useSessionStateStore.getState()  
+  let numberInName = Number(numberInNameOfLastStudentAdded) + 1
+  let color = "green"
+  numberInName = numberInName.toString()
+  if(openStudents.length == 1){
+    numberInName = "1"
+  }
+  useSessionStateStore.setState( (state) => ({ numberInNameOfLastStudentAdded: numberInName }) )
+  useSessionStateStore.getState().addOpenStudentToBottom("Student " + numberInName, color)
+  
+  //Set currentworksheet to be newly added student
+  useSessionStateStore.getState().setCurrentWorksheet(openStudents.length - 1, null)
+  scrollToStudent(openStudents.length - 1)
+  // //currentWorksheet is defined by the index of the open student, so if a new student
+  // //is added above the "other" student card, the openStudentIndex will be offset by one. This corrects that
+  // if( currentWorksheet.openStudentIndex == openStudents.length - 1 ){ //If the current worksheet that's open is in the "Other" student
+  //   useSessionStateStore.getState().setCurrentWorksheet(openStudents.length, 0) //Increase the current worksheet index by 1
+  //   console.log( openStudents.length - 1 )
+  // }
+}
+
 function AddWorksheetButton({ styleObject, index }){
   const onClick = function(){
-    useAddWorksheetModalIsOpenStore.getState().setAddWorksheetModalIsOpen(true)
-    useAddWorksheetModalIsOpenStore.getState().setIndexOfStudentAddingFor(index)
+    addWorksheet(index);
   }
   return (
     <button style={styleObject} onClick={onClick}>
@@ -1335,27 +1625,9 @@ function AddWorksheetButton({ styleObject, index }){
 function AddStudentButton(){
   // const idOfLastStudentAdded = useSessionStateStore(  (state) => state.idOfLastStudentAdded )
   // const tooManyStudents = idOfLastStudentAdded == "99" ? true : false
-  const onClick = function(){
-    
-    const { currentWorksheet, openStudents, numberInNameOfLastStudentAdded } = useSessionStateStore.getState()
-    
-    let numberInName = Number(numberInNameOfLastStudentAdded) + 1
-    let color = "green"
-    numberInName = numberInName.toString()
-    if(openStudents.length == 1){
-      numberInName = "1"
-    }
-    useSessionStateStore.setState( (state) => ({ numberInNameOfLastStudentAdded: numberInName }) )
-    useSessionStateStore.getState().addOpenStudentToBottom("Student " + numberInName, color)
-    //currentWorksheet is defined by the index of the open student, so if a new student
-    //is added above the "other" student card, the openStudentIndex will be offset by one. This corrects that
-    if( currentWorksheet.openStudentIndex == openStudents.length - 1 ){ //If the current worksheet that's open is in the "Other" student
-      useSessionStateStore.getState().setCurrentWorksheet(openStudents.length, 0) //Increase the current worksheet index by 1
-      console.log( openStudents.length - 1 )
-    }
-  }
+  
   return (
-    <GenericPillButton useOnClick={true} isFilled={true} isShort={true} functionToTrigger={onClick} additionalStyleObject={{margin: "0 auto", paddingLeft: "15px", paddingRight: "15px"}} id="add-student-button">
+    <GenericPillButton useOnClick={true} isFilled={true} isShort={true} functionToTrigger={addStudent} additionalStyleObject={{margin: "0 auto", paddingLeft: "15px", paddingRight: "15px"}} id="add-student-button">
       <img src={constants.iconsFolderPath + "/add_white.svg"} alt="Add student" style={{ width: "12px", height: "12px", marginRight: "8px" }}/>
       <p style={{margin: "0", padding: "0"}}>Add Student</p>
     </GenericPillButton>

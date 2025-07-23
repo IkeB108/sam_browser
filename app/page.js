@@ -144,10 +144,10 @@ const useSessionStateStore = create( (set)=> ({
   // ],
   
   openStudents: [
-    {openWorksheets: [], type: "student", name: "Student 1", color: "green", notes: "", notesCopied: false},
-    {openWorksheets: [], type: "student", name: "Student 2", color: "green", notes: "", notesCopied: false},
-    {openWorksheets: [], type: "student", name: "Student 3", color: "green", notes: "", notesCopied: false},
-    {openWorksheets: [], type: "other", name: "Other", color: "none"},
+    {openWorksheets: [], indexOfLastWorksheetOpen: null, type: "student", name: "Student 1", color: "green", notes: "", notesCopied: false},
+    {openWorksheets: [], indexOfLastWorksheetOpen: null, type: "student", name: "Student 2", color: "green", notes: "", notesCopied: false},
+    {openWorksheets: [], indexOfLastWorksheetOpen: null, type: "student", name: "Student 3", color: "green", notes: "", notesCopied: false},
+    {openWorksheets: [], indexOfLastWorksheetOpen: null, type: "other", name: "Other", color: "none"},
   ],
   numberInNameOfLastStudentAdded: 3,
   setOpenStudents: (newValue)=>{
@@ -164,7 +164,7 @@ const useSessionStateStore = create( (set)=> ({
     const indexOfStudentWithCurrentWorksheet = useSessionStateStore.getState().currentWorksheet.openStudentIndex
     if(indexOfStudentWithCurrentWorksheet == indexInOpenStudents){
       //If the student we're deleting is the student with the currently open worksheet, set to null
-      useSessionStateStore.getState().setCurrentWorksheet(null, null)
+      useSessionStateStore.getState().setCurrentWorksheet(0, null)
     }
     if(indexOfStudentWithCurrentWorksheet !== null && indexOfStudentWithCurrentWorksheet > indexInOpenStudents) {
       // If the currentWorksheet's openStudentIndex is greater than the index of the student being deleted,
@@ -197,19 +197,32 @@ const useSessionStateStore = create( (set)=> ({
     set( ()=>({ currentPage: newValue }) )
     useSessionStateStore.getState().saveToLocalStorage()
   },
-  currentWorksheet: { openStudentIndex: null, worksheetIndex: null },
+  currentWorksheet: { openStudentIndex: 0, worksheetIndex: null },
   setCurrentWorksheet: (openStudentIndex, worksheetIndex)=>{
     set( ()=>({ currentWorksheet: { openStudentIndex: openStudentIndex, worksheetIndex: worksheetIndex } }) )
     /*
     If worksheet hasn't been loaded in yet, load it from IDB.
     */
     if(worksheetIndex == null || openStudentIndex == null) return
-    const { openStudents } = useSessionStateStore.getState()
+    const { openStudents, setCurrentPageOfWorksheet } = useSessionStateStore.getState()
     const worksheetID = openStudents[openStudentIndex].openWorksheets[worksheetIndex].id
     if(worksheets[worksheetID] === undefined || worksheets[worksheetID].pageBlobs === undefined){
       // console.log("Worksheet not found in global worksheets object. Loading from IDB.")
       retrieveWorksheet(worksheetID)
     }
+    
+    //Update to be on the last opened page
+    let newCurrentPage = openStudents[openStudentIndex].openWorksheets[worksheetIndex].pageLeftOff
+    const { pageView } = useUserSettingsStore.getState()
+    if(pageView == "single"){
+      if(newCurrentPage == 0)newCurrentPage = 1
+    }
+    if(pageView == "double"){
+      if(newCurrentPage % 2 == 1)newCurrentPage --
+    }
+    setCurrentPageOfWorksheet(newCurrentPage);
+    
+    openStudents[openStudentIndex].indexOfLastWorksheetOpen = worksheetIndex
     useSessionStateStore.getState().saveToLocalStorage()
   },
   getCurrentWorksheetID: ()=>{
@@ -217,8 +230,9 @@ const useSessionStateStore = create( (set)=> ({
     if(currentWorksheet.openStudentIndex === null || currentWorksheet.worksheetIndex === null) return null
     
     //If the worksheet at currentWorksheet doesn't exist, then return null.
-    //This is a failsafe. worksheetExists should always be true if the code is working correctly.
-    let worksheetExists = typeof openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex].id !== "undefined"
+    //This should only happen in cases where the user "selects" a student which contains no worksheets.
+    //If it happens for any other reason, it's a glitch.
+    let worksheetExists = typeof openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex] !== "undefined"
     if(!worksheetExists)return null;
     
     return openStudents[currentWorksheet.openStudentIndex].openWorksheets[currentWorksheet.worksheetIndex].id
