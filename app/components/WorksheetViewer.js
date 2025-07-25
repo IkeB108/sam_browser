@@ -262,7 +262,7 @@ function advanceToWorksheet(nextOrPrev){
 }
 
 function scrollToStudent( studentIndex ){
-  document.getElementById("worksheetSelectionPanelChildDiv").children[studentIndex].scrollIntoView({behavior: "smooth"})
+  document.getElementById("worksheetSelectionPanelChildDiv").children[studentIndex].scrollIntoView({behavior: "instant"})
 }
 
 function onPageContainerPointerDown(event){
