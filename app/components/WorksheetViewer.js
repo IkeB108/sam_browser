@@ -1342,8 +1342,9 @@ function copyStudentData( index ){
     if(i > 0)worksheetString = "__" + worksheetString
     stringToCopy += worksheetString
   }
+  stringToCopy += ">>"
   if(student.notes && student.notes.length > 0){
-    stringToCopy += `>>${student.notes}`
+    stringToCopy += student.notes
   }
   
   if(stringToCopy.length == 0){
