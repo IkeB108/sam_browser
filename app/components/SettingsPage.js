@@ -51,7 +51,7 @@ function SettingsPage(){
 
 function ResetSessionButton(){
   const onClick = function(){
-    localStorage.clear()
+    localStorage.removeItem("sessionState")
     window.location.reload()
     //Same as appending "?reset" to the URL
   }

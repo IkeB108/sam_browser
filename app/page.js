@@ -345,7 +345,7 @@ function HomePage() {
     //via the cleanup function that is returned below.
     if(window.location.href.includes("?reset")){
       //This is a fallback users can use for critical errors that persist after page reloads.
-      localStorage.clear()
+      localStorage.removeItem("sessionState")
       window.location.href = window.location.href.replace("?reset", "")
     }
     
