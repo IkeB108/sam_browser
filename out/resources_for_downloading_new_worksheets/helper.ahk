@@ -1,19 +1,14 @@
 a::
 sendInput, +{Tab}
-Sleep, 55
-sendInput, {Enter}
-
-Sleep, 700
-sendInput, ^v
-Sleep, 100
-sendInput, {Enter}
 return
 
 s::
 sendInput, {Tab}
+return
+
+Space::
 Sleep, 55
 sendInput, {Enter}
-
 Sleep, 700
 sendInput, ^v
 Sleep, 100
@@ -21,6 +16,8 @@ sendInput, {Enter}
 return
 
 f::
+sendInput, {Tab}
+Sleep, 55
 sendInput, {Tab}
 Sleep, 55
 sendInput, {Tab}
