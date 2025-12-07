@@ -1339,13 +1339,18 @@ function copyStudentData( index ){
   for(let i = 0; i < student.openWorksheets.length; i++){
     let worksheetString = condenseWorksheetString(student.openWorksheets[i].id)
     if(student.openWorksheets[i].notes.length > 0)worksheetString += ` (${student.openWorksheets[i].notes})`
-    if(i > 0)worksheetString = "__" + worksheetString
+    if(i > 0){
+      // worksheetString = "__" + worksheetString
+      worksheetString = "\n" + worksheetString
+    }
     stringToCopy += worksheetString
   }
-  stringToCopy += ">>"
   if(student.notes && student.notes.length > 0){
-    stringToCopy += student.notes
+    // stringToCopy += ">>" + student.notes
+    stringToCopy += "\n" + student.notes
   }
+  stringToCopy = stringToCopy.replaceAll("$$", "✅ prev HW")
+  stringToCopy = stringToCopy.replaceAll("##", "❌ prev HW")
   
   if(stringToCopy.length == 0){
     alert("No data to copy.")
