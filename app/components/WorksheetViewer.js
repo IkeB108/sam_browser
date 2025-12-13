@@ -1346,11 +1346,11 @@ function copyStudentData( index ){
     stringToCopy += worksheetString
   }
   if(student.notes && student.notes.length > 0){
-    // stringToCopy += ">>" + student.notes
-    stringToCopy += "\n" + student.notes
+    stringToCopy += ">>" + student.notes
+    // stringToCopy += "\n" + student.notes
   }
-  stringToCopy = stringToCopy.replaceAll("$$", "✅ prev HW")
-  stringToCopy = stringToCopy.replaceAll("##", "❌ prev HW")
+  stringToCopy = stringToCopy.replaceAll("$$", "(✅ prev HW)")
+  stringToCopy = stringToCopy.replaceAll("##", "(❌ prev HW)")
   
   if(stringToCopy.length == 0){
     alert("No data to copy.")
