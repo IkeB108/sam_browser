@@ -42,8 +42,8 @@ sendInput, {Tab}
 Sleep, 55
 sendInput, {Tab}
 Sleep, 55
-sendInput, {Tab}
-Sleep, 250
+; sendInput, {Tab}
+; Sleep, 250
 
 sendInput, {Enter}
 
