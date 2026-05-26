@@ -17,33 +17,35 @@ return
 
 f::
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
 sendInput, {Tab}
-Sleep, 55
+Sleep, 20
+sendInput, {Tab}
+Sleep, 80
 ; sendInput, {Tab}
-; Sleep, 250
+; Sleep, 20
 
 sendInput, {Enter}
 

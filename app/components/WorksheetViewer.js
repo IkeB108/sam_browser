@@ -1,3 +1,8 @@
+/*
+Known bug:
+When clearing the "Other" student and then adding a new worksheet by pressing W, the app crashes
+*/
+
 import constants from "../constants.js"
 import { create } from "zustand"
 import { CloseButton, GenericPillButton } from "../constants.js"
