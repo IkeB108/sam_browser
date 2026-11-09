@@ -4,8 +4,14 @@ import React, { useRef, useState, useEffect } from "react"
 import { create } from 'zustand'
 import { useUserSettingsStore, worksheets } from '../page.js'
 import { useStatusMessageStore, useAWorksheetProcessIsBusyStore } from "../stores.js"
+let lastUploadedWorksheetTarFileName = null
 let lastUploadedWorksheetTarFile = null
 let allUntarredFiles = {}
+
+const useSettingsBackgroundColorStore = create((set) => ({
+  color: "white",
+  setColor: (newColor) => set( (state) => ({color: newColor}) )
+}))
 
 export function setStatusMessageOfWorksheetProcess(newValue){
   useStatusMessageStore.getState().setStatusMessage(newValue)
@@ -13,12 +19,14 @@ export function setStatusMessageOfWorksheetProcess(newValue){
 
 function SettingsPage(){
   const madisonModeActive = useUserSettingsStore( (state) => state.madisonMode )
+  const settingsBackgroundColor = useSettingsBackgroundColorStore().color;
   const settingsPageStyle = {
     width: "100%",
     height: "100%",
+    // backgroundColor: settingsBackgroundColor.color,
     boxSizing: "border-box",
     padding: "16px",
-    backgroundColor: madisonModeActive ? "#ffc6f3" : "white",
+    backgroundColor: madisonModeActive ? "#ffc6f3" : settingsBackgroundColor,
     position: "relative"
   }
   
@@ -27,7 +35,7 @@ function SettingsPage(){
     top: "18px",
     right: "18px",
   }
-  const closeButton = <CloseButton buttonWidthString="24px" iconWidthString="14px" color="black" onClickFunction={()=>{ useSessionStateStore.getState().setCurrentPage("WorksheetViewer") }} additionalStyleObject={closeButtonAdditionalStyle} />
+  const closeButton = <CloseButton buttonWidthString="24px" iconWidthString="14px" color="black" onClickFunction={()=>{ useSessionStateStore.getState().setCurrentPage("WorksheetViewer"); useSettingsBackgroundColorStore.getState().setColor("white"); }} additionalStyleObject={closeButtonAdditionalStyle} />
   
   return (
     <div style={settingsPageStyle}>
@@ -90,10 +98,12 @@ function UploadWorksheetImageDataButton(){
     }
   }
   const onFileInputChange = async function(e){
+    useSettingsBackgroundColorStore.getState().setColor("white")
     if(e.target.files.length === 0){
       return
     }
     const selectedFile = e.target.files[0]
+    lastUploadedWorksheetTarFileName = selectedFile.name
     lastUploadedWorksheetTarFile = selectedFile
     allUntarredFiles = await getUntarredFiles(selectedFile)
     updateWorksheetsObjectWithUntarredFiles(allUntarredFiles)
@@ -130,7 +140,7 @@ function UploadWorksheetImageDataButton(){
 }
 
 async function getUntarredFiles(tarFile){
-  setStatusMessageOfWorksheetProcess("Extracting images from tar file. This may take a minute...")
+  setStatusMessageOfWorksheetProcess("Extracting images from " + lastUploadedWorksheetTarFileName + ". This may take a minute...")
   
   const reader = new FileReader()
   let allExtractedFiles = {}
@@ -157,7 +167,7 @@ async function getUntarredFiles(tarFile){
               console.log("File not a webp image: " + fileName)
             }
           }
-          setStatusMessageOfWorksheetProcess(extractedFilesCount + " images extracted. Storing worksheets in your browser's cache. This may take a minute...")
+          setStatusMessageOfWorksheetProcess(extractedFilesCount + " images extracted. Storing worksheets from " + lastUploadedWorksheetTarFileName + " in your browser's cache. This may take a minute...")
           resolve(allExtractedFiles)
         }
       ).catch(reject);
@@ -221,7 +231,8 @@ function storeWorksheetsInIndexedDB(){
   const workerForStoreWorksheetsInIDB = new Worker(constants.webWorkersFolderPath + "/worker_for_store_files_in_idb.js")
   const dataToSend = {
     worksheets,
-    idbDatabaseVersion: constants.idbDatabaseVersion
+    idbDatabaseVersion: constants.idbDatabaseVersion,
+    lastUploadedWorksheetTarFileName
   }
   workerForStoreWorksheetsInIDB.postMessage(dataToSend)
   workerForStoreWorksheetsInIDB.onmessage = function(event){
@@ -230,6 +241,8 @@ function storeWorksheetsInIndexedDB(){
     }
     if(event.data.type == "confirm_transaction_complete"){
       useAWorksheetProcessIsBusyStore.getState().updateValue(false)
+      //Set background color to a bright color.
+      useSettingsBackgroundColorStore.getState().setColor("#ffd900")
     }
   }
   useAWorksheetProcessIsBusyStore.getState().updateValue(true)

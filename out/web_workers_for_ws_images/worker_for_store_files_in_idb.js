@@ -13,6 +13,7 @@ self.onmessage = async function(event){
   }, 200)
   let worksheets = event.data.worksheets
   let idbDatabaseVersion = event.data.idbDatabaseVersion
+  let lastUploadedWorksheetTarFileName = event.data.lastUploadedWorksheetTarFileName
   
   let request = indexedDB.open("worksheetDatabase", idbDatabaseVersion) 
   request.onupgradeneeded = function(event){
@@ -29,7 +30,7 @@ self.onmessage = async function(event){
       worksheetCount ++
       if(worksheetCount % 39 == 0){
         useLoadingAnimation = true
-        latestStatusMessage = "Storing worksheets in your browser's cache. This may take a minute..."
+        latestStatusMessage = "Storing worksheets from " + lastUploadedWorksheetTarFileName + " in your browser's cache. This may take a minute..."
         // self.postMessage({
         //   "type": "status_update_from_web_worker",
         //   "content": "Storing worksheet #" + worksheetCount + " on your device..."
@@ -41,7 +42,7 @@ self.onmessage = async function(event){
       useLoadingAnimation = false
       self.postMessage({
         "type": "status_update_from_web_worker",
-        "content": "All worksheets stored."
+        "content": "All worksheets from " + lastUploadedWorksheetTarFileName + " stored in your browser's cache."
       })
       self.postMessage({
         "type": "confirm_transaction_complete",

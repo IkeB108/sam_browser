@@ -3,7 +3,7 @@ When new worksheet image data is created, the worksheetsWithoutPageBlobs.json fi
 2. Clear the image data in Settings.
 3. Maybe refresh the page to ensure worksheets is empty.
 4. Upload the new image data (in tar files), then refresh the page to download the new JSON file.
-5. Then copy paste the contents into the worksheetsWithoutPageBlobs.json file.
+5. Then copy paste the contents into the worksheetsWithoutPageBlobs.json file in the public folder.
 
 Then run: pnpm buildwithbasepath
 Then commit & sync changes to the Github repo

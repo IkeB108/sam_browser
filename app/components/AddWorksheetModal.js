@@ -9,7 +9,7 @@ const useSearchInputValueStore = create((set) => ({
   searchInputValue: "",
   // setSearchInputValue: (value) => set({ searchInputValue: value }),
   setSearchInputValue: (value) => {
-    if(['a','b','c','1','2','3','4','5','6','7'].includes(value.toLowerCase())){
+    if(['a','b','c','1','2','3','4','5','6','7', '8'].includes(value.toLowerCase())){
       value = "0" + value
     }
     set({ searchInputValue: value });
@@ -24,7 +24,8 @@ const useSearchInputValueStore = create((set) => ({
       "04": 4,
       "05": 5,
       "06": 6,
-      "07": 7
+      "07": 7,
+      "08": 8
     }
     //Get search results
     if(value.length >= 2){
@@ -346,6 +347,7 @@ function LevelButtonsRow(){
       <LevelButton levelInteger="5" />
       <LevelButton levelInteger="6" />
       <LevelButton levelInteger="7" />
+      <LevelButton levelInteger="8" />
     </div>
   )
 }

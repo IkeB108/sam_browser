@@ -1,8 +1,3 @@
-/*
-Known bug:
-When clearing the "Other" student and then adding a new worksheet by pressing W, the app crashes
-*/
-
 import constants from "../constants.js"
 import { create } from "zustand"
 import { CloseButton, GenericPillButton } from "../constants.js"
@@ -58,6 +53,8 @@ function allTextInputsBlurred(){
 const keyboardShortcuts = {
   "prevPage": ["d", "ArrowLeft"],
   "nextPage": ["f", "ArrowRight"],
+  "back10Pages": ["shift_d", "shift_ArrowLeft"],
+  "forward10Pages": ["shift_f", "shift_ArrowRight"],
   "prevWorksheet": ["a", "ArrowUp"],
   "nextWorksheet": ["s", "ArrowDown"],
   "prevStudent": ["e"],
@@ -71,9 +68,11 @@ const keyboardShortcuts = {
   "copyStudent": ["v"]
 }
 
-function matchEventKeyToShortcut(eventKey){
+function matchEventKeyToShortcut(event){
+  let shiftHeld = event.shiftKey
+  let eventKeyWithShift = (shiftHeld ? "shift_" : "") + event.key.toLowerCase() //prepends "shift_" to eventKey string ONLY if shiftHeld is true
   for(let action in keyboardShortcuts){
-    if(keyboardShortcuts[action].includes(eventKey)){
+    if(keyboardShortcuts[action].includes(eventKeyWithShift)){
       return action
     }
   }
@@ -82,7 +81,7 @@ function matchEventKeyToShortcut(eventKey){
 
 function onKeyDownInWorksheetViewer(event){
   const { allowArrowKeysForPageNavigation } = useSessionStateStore.getState()
-  let action = matchEventKeyToShortcut(event.key)
+  let action = matchEventKeyToShortcut(event)
   if(allowArrowKeysForPageNavigation && allTextInputsBlurred() && action !== null){
     const { openStudentIndex, worksheetIndex } = useSessionStateStore.getState().currentWorksheet
     switch ( action ){
@@ -91,6 +90,12 @@ function onKeyDownInWorksheetViewer(event){
         break;
       case "nextPage":
         changePage("next")
+        break;
+      case "back10Pages":
+        changePage("back10Pages")
+        break;
+      case "forward10Pages":
+        changePage("forward10Pages")
         break;
       case "prevWorksheet":
         advanceToWorksheet("prev")
@@ -571,14 +576,30 @@ function changePage( prevOrNext ){
   if(getCurrentWorksheetID() == null) return;
   
   const { pageView } = useUserSettingsStore.getState()
-  const pagesToAdvance = (pageView == "single") ? 1 : 2
   let currentWorksheet = getCurrentWorksheetID()
-  
-  if(worksheets[currentWorksheet] === undefined) return; //User doesn't have this worksheet on their system
-  
   let newPage = currentPageOfWorksheet
-  if(prevOrNext == "prev") newPage -= pagesToAdvance
-  if(prevOrNext == "next") newPage += pagesToAdvance
+  if(prevOrNext == "prev" || prevOrNext == "next"){
+    let pagesToAdvance = (pageView == "single") ? 1 : 2
+    
+    if(worksheets[currentWorksheet] === undefined) return; //User doesn't have this worksheet on their system
+    
+    if(prevOrNext == "prev") newPage -= pagesToAdvance
+    if(prevOrNext == "next") newPage += pagesToAdvance
+  }
+  if(prevOrNext == "back10Pages"){
+    //Round the current page value DOWN to the nearest multiple of ten.
+    let currentPageRoundedToTens = Math.floor(currentPageOfWorksheet / 10) * 10
+    //If the value is still the same, then SUBTRACT exactly 10.
+    if(currentPageRoundedToTens == currentPageOfWorksheet)currentPageRoundedToTens -= 10;
+    newPage = currentPageRoundedToTens
+  }
+  if(prevOrNext == "forward10Pages"){
+    //Round the current page value UP to the nearest multiple of ten.
+    let currentPageRoundedToTens = Math.ceil(currentPageOfWorksheet / 10) * 10
+    //If the value is still the same, then ADD exactly 10.
+    if(currentPageRoundedToTens == currentPageOfWorksheet)currentPageRoundedToTens += 10;
+    newPage = currentPageRoundedToTens
+  }
   let minPage = (pageView == "single") ? 1 : 0
   let maxPage = worksheets[currentWorksheet].pageCount
   if(pageView == "double"){
@@ -1239,7 +1260,7 @@ function ClearButtonForOtherStudent({index}){
     const indexOfStudentWithCurrentWorksheet = useSessionStateStore.getState().currentWorksheet.openStudentIndex
     if(indexOfStudentWithCurrentWorksheet == index){
       //If "Other" is the student with the currently open worksheet, set to null
-      useSessionStateStore.getState().setCurrentWorksheet(null, null)
+      useSessionStateStore.getState().setCurrentWorksheet(openStudents.length - 1, null)
     }
   }
   return (
