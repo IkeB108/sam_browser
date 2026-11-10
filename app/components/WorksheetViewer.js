@@ -50,13 +50,13 @@ function allTextInputsBlurred(){
 //   "addWorksheet": ["r"]
 // }
 
-const keyboardShortcuts = {
-  "prevPage": ["d", "ArrowLeft"],
-  "nextPage": ["f", "ArrowRight"],
-  "back10Pages": ["shift_d", "shift_ArrowLeft"],
-  "forward10Pages": ["shift_f", "shift_ArrowRight"],
-  "prevWorksheet": ["a", "ArrowUp"],
-  "nextWorksheet": ["s", "ArrowDown"],
+const keyboardShortcuts = { //Note: the arrow key keycodes are normally capitalized (ArrowKeyLeft) but they are lowercase here because the keydowns are matched with .toLowerCase()
+  "prevPage": ["d", "arrowleft"],
+  "nextPage": ["f", "arrowright"],
+  "back10Pages": ["shift_d", "shift_arrowleft"],
+  "forward10Pages": ["shift_f", "shift_arrowright"],
+  "prevWorksheet": ["a", "arrowup"],
+  "nextWorksheet": ["s", "arrowdown"],
   "prevStudent": ["e"],
   "nextStudent": ["r"],
   "addWorksheetNote": ["t"],
